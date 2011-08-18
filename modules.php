@@ -3,15 +3,14 @@
  * PHP CommonJS boilerplate for in-browser module use
  *  By default, this script assumes all js files in the same directory as it,
  *   as well as all subdirectories are 
- *  Modules::html() prints the necessary script tags to make all modules available in the web app
+ *  Modules::script($name) prints the necessary script tags to make the module available in the web app
  *  Modules::module($name) prints the module code, including all boilerplate code necessary
- *  Modules::modules() prints all of the modules code, including boilerplate
  *
  *  When the browser directly requests this file,
- *   if a module name is in the PATH_INFO, Modules::module($name) is output
- *   otherwise Modules::modules() is output
+ *   Modules::module($_SERVER['PATH_INFO']) is output
  *
- *  When this script is called from the command line Modules::modules() is output
+ *  When this script is called from the command line Modules::module($name) is output
+ *   php ./modules.php [name] [config_file]; # both arguments are optional, config_file nust have a .config.json extension
  *
  * Copyright 2011, Andy VanWagoner
  * Released under the MIT, BSD, and GPL Licenses.
@@ -57,78 +56,6 @@ class Modules {
 		if ($json = json_decode($json, true)) self::setDefaultOptions($json);
 	}
 
-	/**
-	 * Prints the script tags required to use CommonJS modules in the browser
-	 * @param array $opts options influencing how the modules are found, and how the tags are printed
-	 *  indent - a whitespace string to print before each script tag
-	 *  src_url - the url where browser retrieves the modules
-	 *  separate - if true, each module will be in it's own script tag, defaults to false
-	 *  return - if true returns the output as a string, instead of printing it
-	 **/
-	public static function html(array $opts=null) {
-		$opts =& self::getOptions($opts);
-		$ind = $opts['indent'];
-		$src = $opts['src_url'];
-		if ($opts['separate']) {
-			$modules =& self::getModules($opts);
-			foreach ($modules as $name => &$filename) {
-				$out .= $ind.'<script src="'.$src.'/'.$name.'"></script>'."\n";
-			}
-		} else {
-			$out = $ind.'<script src="'.$src.'"></script>'."\n";
-		}
-		if ($opts['return']) return $out;
-		else echo $out;
-	}
-
-	/**
-	 * Prints the code for the module, including boilerplate code necessary in the browser.
-	 * @param $name name of the module - must be a Modules 1.1.1 top-level module identifier
-	 * @param array $opts options influencing how the module name is resolved, and how the code is printed
-	 *  mod_dir - specifies the root modules folder (no trailing slash)
-	 *  compress - specifies a function to compress the javascript code, or false to not compress (default array('JSMin','minify'))
-	 *   the function specified must take the uncompressed code as the first parameter, and return the compressed code
-	 *  return - if true the code is returned from the funtion, not printed
-	 **/
-	public static function module($name, array $opts=null) {
-		$opts =& self::getOptions($opts);
-		if (!preg_match('/^\w+(?:\/\w+)*$/', $name)) throw new Exception('"'.$name.'" is not a valid Modules 1.1.1 top-level module identifier', 1);
-		$filename = $opts['mod_dir'].'/'.$name.'.js';
-		if (!is_file($filename)) $filename = $opts['mod_dir'].'/'.$name.'/'.basename($name).'.js';
-		if (!is_file($filename)) throw new Exception('Module "'.$name.'" could not resolve to a file', 2);
-		return self::printModule($name, $filename, $opts);
-	}
-
-	/**
-	 * Prints the code for all modules
-	 * @param array $opts options influencing how the module name is resolved, and how the code is printed
-	 *  mod_dir - specifies the root modules folder (no trailing slash)
-	 *  compress - specifies a function to compress the javascript code, or false to not compress (default array('JSMin','minify'))
-	 *   the function specified must take the uncompressed code as the first parameter, and return the compressed code
-	 *  return - if true the code is returned from the funtion, not printed
-	 **/
-	public static function modules(array $opts=null) {
-		$opts =& self::getOptions($opts);
-		$modules =& self::getModules($opts);
-		$compress = $opts['compress'];
-		$return = $opts['return'];
-		$opts['compress'] = !($opts['return'] = true); // take care of printing and compressing here, not in each module
-
-		$out = '';
-		foreach ($modules as $name => &$filename) {
-			$out .= self::printModule($name, $filename, $opts);
-		}
-
-		if (!empty($compress['function'])) {
-			if (!empty($compress['include'])) @include_once $compress['include'];
-			$compressed = call_user_func($compress['function'], $out);
-			if ($compressed) $out = $compressed;
-		}
-
-		if ($return) return $out;
-		else echo $out;
-	}
-
 	protected static $default_opts;
 	protected static function & getOptions(array &$opts=null) {
 		$default_opts =& self::getDefaultOptions();
@@ -138,15 +65,99 @@ class Modules {
 			'src_url'  => empty($opts['src_url'])   ? $default_opts['src_url']  : $opts['src_url'],
 			'separate' => !isset($opts['separate']) ? $default_opts['separate'] : $opts['separate'],
 			'indent'   => !isset($opts['indent'])   ? $default_opts['indent']   : $opts['indent'],
+			'headers'  => !isset($opts['headers'])  ? $default_opts['headers']  : $opts['headers'],
 			'compress' => !isset($opts['compress']) ? $default_opts['compress'] : $opts['compress']
 		);
 	}
 
-	protected static function & getModules(array &$opts) {
-		$modules = array( 'require'=>'::boilerplate::' ); // include boilerplate first
+
+	/**
+	 * Prints the script tags required to use CommonJS modules in the browser
+	 * @param $name name of the module - must be a Modules 1.1.1 top-level module identifier
+	 *  if name is falsy, tags for all modules in the root modules folder are output
+	 *  if name resolves to a folder, tags for all modules in that folder are output
+	 * @param array $opts options influencing how the modules are found, and how the tags are printed
+	 *  indent - a whitespace string to print before each script tag
+	 *  src_url - the url where browser retrieves the modules
+	 *  separate - if true, each module will be in it's own script tag, defaults to false
+	 *  return - if true returns the output as a string, instead of printing it
+	 **/
+	public static function script($name=null, array $opts=null) {
+		$opts =& self::getOptions($opts);
+		$ind = $opts['indent'];
+		$src = $opts['src_url'];
+		if ($opts['separate']) {
+			$modules =& self::getModules($name, $opts);
+			foreach ($modules as $name => &$filename) {
+				$out .= $ind.'<script src="'.$src.'/'.$name.'"></script>'."\n";
+			}
+		} else {
+			$out = $ind.'<script src="'.$src.(empty($name)?'':'/'.$name).'"></script>'."\n";
+		}
+		if ($opts['return']) return $out;
+		else echo $out;
+	}
+
+	/**
+	 * Prints the code for the module(s), including boilerplate code necessary in the browser.
+	 * @param $name name of the module - must be a Modules 1.1.1 top-level module identifier
+	 *  if name is falsy, all modules in the root modules folder are output
+	 *  if name resolves to a folder, all modules in that folder are output
+	 * @param array $opts options influencing how the module name is resolved, and how the code is printed
+	 *  mod_dir - specifies the root modules folder (no trailing slash)
+	 *  compress - specifies a function to compress the javascript code, or false to not compress
+	 *   the function specified must take the uncompressed code as the first parameter, and return the compressed code
+	 *  headers - The headers sent (only if return is false)
+	 *  return - if true the code is returned from the funtion, not printed
+	 **/
+	public static function module($name=null, array $opts=null) {
+		$opts =& self::getOptions($opts);
+		$modules =& self::getModules($name, $opts);
+
+		$out = ''; $last = 0;
+		foreach ($modules as $name => &$filename) {
+			$out .= self::printModule($name, $filename, $opts);
+			$last = max($last, filemtime($filename));
+		}
+
+		$compress =& $opts['compress'];
+		if (!empty($compress['function'])) {
+			if (!empty($compress['include'])) @include_once $compress['include'];
+			$compressed = call_user_func($compress['function'], $out);
+			if ($compressed) $out = $compressed;
+		}
+
+		$headers =& $opts['headers'];
+		if (!$opts['return'] && !empty($headers) && is_array($headers)) {
+			if (!empty($headers['Content-Type']))
+				header('Content-Type: '.(is_string($headers['Content-Type']) ? $headers['Content-Type'] : 'text/javascript'));
+			if (!empty($headers['Last-Modified']))
+				header('Last-Modified: '.gmdate('D, d M Y H:i:s', $last).' GMT');
+			if (!empty($headers['Expires']))
+				header('Expires: '.gmdate('D, d M Y H:i:s', strtotime($headers['Expires'])).' GMT');
+		}
+
+		if ($opts['return']) return $out;
+		else echo $out;
+	}
+
+	protected static function & getModules($name, array &$opts) {
+		$modules = array();
 		$mod_dir = $opts['mod_dir'];
 		$prefix = strlen($mod_dir)+1;
-		$files = array( $mod_dir );
+		$files = array();
+		if ($name) {
+			if (!preg_match('/^\w+(?:\/\w+)*$/', $name)) throw new Exception('"'.$name.'" is not a valid Modules 1.1.1 top-level module identifier', 1);
+			$filename = $mod_dir.'/'.$name.'.js';
+			if (!is_file($filename) || !is_readable($filename)) {
+				$filename = $opts['mod_dir'].'/'.$name; // not a module, try a folder
+				if (!is_dir($filename) || !is_readable($filename)) throw new Exception('Module "'.$name.'" could not resolve to a readable file', 2);
+			}
+			$files[] = $filename;
+		} else { // include all modules
+			$files[] = $mod_dir;
+			$modules['require'] = __FILE__; // include boilerplate first
+		}
 		$visited = array();
 		while (!empty($files)) {
 			$file = array_pop($files);
@@ -160,7 +171,9 @@ class Modules {
 			if (is_dir($file)) {
 				if (!($dir = opendir($file))) continue;
 				while (($sub = readdir($dir)) !== false) {
-					if (preg_match('/^\w+\.js$/i', $sub) || is_dir($sub)) $files[] = $file.'/'.$sub;
+					if ($sub{0} === '.') continue;
+					$subf = $file.'/'.$sub;
+					if ((preg_match('/^\w+\.js$/i', $sub) || is_dir($subf)) && is_readable($subf)) $files[] = $subf;
 				}
 				closedir($dir);
 				continue;
@@ -168,26 +181,15 @@ class Modules {
 
 			// convert filename to name
 			$name = substr($file, $prefix, -3); // remove mod_dir prefix and .js suffix
-			if (strpos($name, '/') !== false && basename($name) === basename(dirname($name))) $name = dirname($name); // namespace/mymod/mymod -> namespace/mymod
-
 			$modules[$name] = $file;
 		}
 		return $modules;
 	}
 
 	protected static function printModule($name, $filename, array &$opts) {
-		$out = ($name === 'require' && $filename === '::boilerplate::') ? self::$require :
-			"require.define('$name',function(){with(arguments[0]){\n".file_get_contents($filename)."\n}});";
-
-		$compress =& $opts['compress'];
-		if (!empty($compress['function'])) {
-			if (!empty($compress['include'])) @include_once $compress['include'];
-			$compressed = call_user_func($compress['function'], $out);
-			if ($compressed) $out = $compressed;
-		}
-
-		if ($opts['return']) return $out;
-		else echo $out;
+		$out = ($name === 'require' || $filename === __FILE__) ? self::$require :
+			"/* ==MODULE== $name */require.define('$name',function(){with(arguments[0]){\n".file_get_contents($filename)."\n}});\n";
+		return $out;
 	}
 
 	/**
@@ -226,16 +228,26 @@ var require = (function(){
 
 	return require;
 })();
+
 JavaScript;
 }
 
-if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
-	$opts =& Modules::getDefaultOptions();
-	$headers =& $opts['headers'];
-	if ($headers['Content-Type']) header('Content-Type: '.(is_string($headers['Content-Type']) ? $headers['Content-Type'] : 'text/javascript'));
-	if ($headers['Expires']) header('Expires: '.gmdate('D, d M Y H:i:s', strtotime($headers['Expires'])).' GMT');
-//	header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
-	$name = $_SERVER['PATH_INFO'] ? substr($_SERVER['PATH_INFO'], 1) : '';
-	if ($name) Modules::module($name);
-	else Modules::modules();
+
+// command line use
+if (!empty($argv) && realpath(__FILE__) === realpath($argv[0])) {
+	$name = $argv[1];
+	$config = $argv[2];
+	if (substr($name, -12) === '.config.json') {
+		$config = $name;
+		$name = null;
+	}
+	if ($config) Modules::loadDefaultOptions($config);
+	Modules::module($name, array( 'return'=>false ));
+}
+
+
+// direct request use
+if (empty($argv) && realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
+	$name = empty($_SERVER['PATH_INFO']) ? null : trim($_SERVER['PATH_INFO'], " \t\r\n\0\x0B\\/");
+	Modules::module($name, array( 'return'=>false ));
 }
