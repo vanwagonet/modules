@@ -29,7 +29,8 @@ class Modules {
 				'separate' => false,
 				'indent'   => '	',
 				'headers'  => array( 'Content-Type'=>true, 'Expires'=>'+30 days', 'Last-Modified'=>true ),
-				'compress' => false
+				'compress' => false,
+				'require'  => dirname(__FILE__).'/modules.require.js'
 			);
 			self::loadDefaultOptions(dirname(__FILE__).'/modules.config.json');
 		}
@@ -66,7 +67,8 @@ class Modules {
 			'separate' => !isset($opts['separate']) ? $default_opts['separate'] : $opts['separate'],
 			'indent'   => !isset($opts['indent'])   ? $default_opts['indent']   : $opts['indent'],
 			'headers'  => !isset($opts['headers'])  ? $default_opts['headers']  : $opts['headers'],
-			'compress' => !isset($opts['compress']) ? $default_opts['compress'] : $opts['compress']
+			'compress' => !isset($opts['compress']) ? $default_opts['compress'] : $opts['compress'],
+			'require'  => empty($opts['require'])   ? $default_opts['require']  : $opts['require']
 		);
 	}
 
@@ -115,6 +117,10 @@ class Modules {
 		$modules =& self::getModules($name, $opts);
 
 		$out = ''; $last = 0;
+		if (!$name && $opts['require']) { // define require if all modules
+			$out .= self::printRequire($opts);
+			$last = filemtime($opts['require']);
+		}
 		foreach ($modules as $name => &$filename) {
 			$out .= self::printModule($name, $filename, $opts);
 			$last = max($last, filemtime($filename));
@@ -156,7 +162,6 @@ class Modules {
 			$files[] = $filename;
 		} else { // include all modules
 			$files[] = $mod_dir;
-			$modules['require'] = __FILE__; // include boilerplate first
 		}
 		$visited = array();
 		while (!empty($files)) {
@@ -187,49 +192,15 @@ class Modules {
 	}
 
 	protected static function printModule($name, $filename, array &$opts) {
-		$out = ($name === 'require' || $filename === __FILE__) ? self::$require :
-			"/* ==MODULE== $name */require.define('$name',function(){with(arguments[0]){\n".file_get_contents($filename)."\n}});\n";
-		return $out;
+		return "/* ==MODULE== $name */"
+			."require.define('$name',function(){with(arguments[0]){\n"
+				.file_get_contents($filename)
+			."\n/* ==ENDMODULE== $name */}});\n";
 	}
 
-	/**
-	 * This is the require function definition and base for the boilerplate
-	 **/
-	protected static $require = <<<JavaScript
-var require = (function(){
-	var last = /\w+$/, ext = '.js', modules = {}, defs = {},
-		readOnly = { writable:false, configurable:false, enumerable:true };
-
-	function require(name) { // name is a "top-level" module id
-		if (name.slice(-ext.length) === ext) { name = name.slice(0, -ext.length); }
-		if (!defs[name]) { throw new Error('"'+name+'" could not be loaded'); }
-		if (!modules[name]) {
-			modules[name] = {
-				exports:{}, module:{ id:name }, require:function(id) {
-					// resolve relative module id
-					if (id.charAt(0) === '.') { id = name.replace(last, id); }
-					var orig = id.split('/'), terms = [], i, l = orig.length;
-					for (i = 0; i < l; ++i) {
-						if (orig[i] === '..') { terms.pop(); }
-						else if (orig[i] !== '.') { terms[terms.length] = orig[i]; }
-					}
-					return require(terms.join('/'));
-				}
-			};
-			if (Object.defineProperty) { // module.id read-only if possible
-				Object.defineProperty(modules[name].module, 'id', readOnly);
-			}
-			defs[name](modules[name]);
-		}
-		return modules[name].exports;
+	protected static function printRequire(array &$opts) {
+		return file_get_contents($opts['require']);
 	}
-
-	require.define = function(name, fn) { defs[name] = fn; };
-
-	return require;
-})();
-
-JavaScript;
 }
 
 
