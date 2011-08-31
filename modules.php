@@ -193,7 +193,7 @@ class Modules {
 
 	protected static function printModule($name, $filename, array &$opts) {
 		return "/* ==MODULE== $name */"
-			."require.define('$name',function(){with(arguments[0]){\n"
+			."require.define('$name',function(){with(this){\n"
 				.file_get_contents($filename)
 			."\n/* ==ENDMODULE== $name */}});\n";
 	}
