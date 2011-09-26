@@ -193,9 +193,9 @@ class Modules {
 
 	protected static function printModule($name, $filename, array &$opts) {
 		return "/* ==MODULE== $name */"
-			."require.define('$name',function(){with(this){\n"
+			."require.define('$name',function(module,exports){\n"
 				.file_get_contents($filename)
-			."\n/* ==ENDMODULE== $name */}});\n";
+			."\n/* ==ENDMODULE== $name */});\n";
 	}
 
 	protected static function printRequire(array &$opts) {

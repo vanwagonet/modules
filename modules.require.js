@@ -1,35 +1,39 @@
-var require = (function(){
-	var last = /\w+$/, ext = '.js', modules = {}, defs = {},
+(function(){
+	var global = (this.global = this), last = /\w+$/, ext = '.js',
+		modules = {}, defs = {}, stack = [],
 		readOnly = { writable:false, configurable:false, enumerable:true },
-		props = { id:readOnly, require:readOnly,
-			module:{ writable:false, configurable:false, enumerable:false } };
+		props = { id:readOnly, require:readOnly };
 
-	function require(name) { // name is a "top-level" module id
-		if (name.slice(-ext.length) === ext) { name = name.slice(0, -ext.length); }
-		if (!defs[name]) { throw new Error('"'+name+'" could not be loaded'); }
-		if (!modules[name]) {
-			var module = (modules[name] = {
-				exports:{}, id:name, require:function(id) {
-					// resolve relative module id
-					if (id.charAt(0) === '.') { id = name.replace(last, id); }
-					var orig = id.split('/'), terms = [], i, l = orig.length;
-					for (i = 0; i < l; ++i) {
-						if (orig[i] === '..') { terms.pop(); }
-						else if (orig[i] !== '.') { terms[terms.length] = orig[i]; }
-					}
-					return require(terms.join('/'));
-				}
-			});
-			module.module = module;
-			// read-only props, and cannot add or remove props if possible
+	function require(oid) {
+		var id = resolve(oid);
+		if (!defs[id]) { throw new Error('Module "'+oid+'" was not found.'); }
+		if (!modules[id]) {
+			var module = (modules[id] = { exports:{}, id:id, require:require });
 			if (Object.defineProperties) { Object.defineProperties(module, props); }
 			if (Object.seal) { Object.seal(module); }
-			defs[name].call(module);
+
+			stack[stack.length] = id;
+			defs[id].call(global, module, module.exports);
+			--stack.length;
 		}
-		return modules[name].exports;
-	}
+		return modules[id].exports;
+	} global.require = require;
 
-	require.define = function(name, fn) { defs[name] = fn; };
+	function resolve(id) {
+		if (id.slice(-ext.length) === ext) { id = id.slice(0, -ext.length); }
+		var base = (this != global && this.id) || (stack.length && stack[stack.length-1]);
+		if (!base) { return id; }
+		if (id.charAt(0) === '.') { id = base.replace(last, id); }
+		var orig = id.split('/'), terms = [], i, l = orig.length;
+		for (i = 0; i < l; ++i) {
+			if (orig[i] === '..') { terms.pop(); }
+			else if (orig[i] !== '.') { terms[terms.length] = orig[i]; }
+		}
+		return terms.join('/');
+	} require.resolve = resolve;
 
-	return require;
+	require.define = function(id, fn) { defs[id] = fn; };
+	require.cache = modules;
+
+	if (Object.defineProperties) { Object.defineProperties(require, { define:readOnly, resolve:readOnly, cache:readOnly }); }
 })();
