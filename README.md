@@ -14,6 +14,15 @@ Some of the motivation for this project can be found in [this article](http://th
 
  * Automatically put all modules into a single js file
  * Configure minification using your favorite compressor
+ * Manage configurations in a json file
+
+## Usage
+
+PHP:
+    <?= Modules::script() ?>
+
+Client JavaScript (using modules):
+    require('some/module'); // returns exports of that module
 
 ## License 
 
