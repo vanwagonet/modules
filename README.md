@@ -19,10 +19,14 @@ Some of the motivation for this project can be found in [this article](http://th
 ## Usage
 
 PHP:
-    <?= Modules::script() ?>
+```php
+<?= Modules::script() ?>
+```
 
 Client JavaScript (using modules):
-    require('some/module'); // returns exports of that module
+```javascript
+require('some/module'); // returns exports of that module
+```
 
 ## License 
 
