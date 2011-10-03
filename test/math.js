@@ -1,4 +1,4 @@
-exports = { add: function() {
+exports = module.exports = { add: function() {
 	var v = 0, i = arguments.length;
 	while (i) { v += arguments[--i]; }
 	return v;
