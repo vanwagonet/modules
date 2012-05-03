@@ -20,21 +20,21 @@ Some of the motivation for this project can be found in [this article](http://th
 
 PHP:
 
-```
+```php
 <?= Modules::script() ?>
 ```
 
 Client JavaScript (using modules):
 
-```
-require('some/module'); // returns exports of that module
+```javascript
+var module = require('some/module'); // returns exports of that module
 ```
 
 ## License 
 
 (The MIT License)
 
-Copyright (c) 2011 Andy VanWagoner
+Copyright (c) 2012 Andy VanWagoner
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -54,3 +54,4 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
