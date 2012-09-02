@@ -9,14 +9,43 @@ Some of the motivation for this project can be found in [this article](http://th
 
  * Modules 1.1.1 implementation for in-browser use
  * module.require function similar to nodejs implementation
+ * require.ensure(id, callback) for async 
 
 ## Server-Side Features
 
  * Automatically put all modules into a single js file
  * Configure minification using your favorite compressor
  * Manage configurations in a json file
+ * middleware for express
 
 ## Usage
+
+Server JavaScript (Node.js + express)
+
+```javascript
+var app = express(), modules = require('modules');
+app.use(modules.middleware({
+	root: __dirname, // server side root directory for modules
+	path: '/module/', // url path for modules
+	maxAge: 24 * 60 * 60 * 1000, // Cache-Control max-age for modules
+	compress: function(str, done) {
+		// do compression using uglify, or your prefered compressor
+		done(err, compressed); // when done or if there is an error
+	},
+	map: { jquery:'./lib/jquery-wrapped.min.js' }, // map pretty names to filenames
+	translate: {
+		html: function(id, filename, content) {
+			// convert html templates to js functions, or do whatever
+			//  you want to convert file types to commonjs modules
+			return 'exports.template = ' + _.template(content).source;
+		}
+	},
+	forbid: [ // blacklist files or folders you don't want accessible.
+		'./config/',
+		'../server.js'
+	]
+}));
+```
 
 PHP:
 
@@ -27,7 +56,15 @@ PHP:
 Client JavaScript (using modules):
 
 ```javascript
-var module = require('some/module'); // returns exports of that module
+var mod = require('some/module'); // returns exports of that module
+exports.a = 'a'; // export stuff
+modules.exports = function() {}; // this works too
+
+Object.keys(module); // [ 'exports', 'id', 'uri', 'loaded', 'parent', 'children' ];
+require.ensure('module/gamma', function() {
+	// gamma an all of its deep dependencies have been loaded asynchronously
+	var gamma = require('module/gamma');
+});
 ```
 
 ## License 
