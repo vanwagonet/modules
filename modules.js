@@ -96,10 +96,8 @@ function modules(modules, opts, next) {
 		loop();
 	}
 
-	if (opts.require) { // define require if all modules
-		length = modules.unshift('require');
-	} else { // allow this package to be before require.js
-		out +=
+	if ('require' !== modules[0]) {
+		out += // allow this package to be before require.js
 			'if (!this.define) { this.define = (function() {\n' +
 			'	function define(id, fn) { defs[id] = fn; }\n' +
 			'	var defs = define.defs = {};\n' +
@@ -111,12 +109,13 @@ function modules(modules, opts, next) {
 
 /**
  * Finds all the module's nested dependencies and provides the ids as an array
+ *  id can be a string or an array of absolute module id strings
  **/
 function dependencies(id, opts, next) {
 	opts = getOptions(opts);
-	var stack = [ id ], list = [ id ], ext = '.js',
+	var stack = [].concat(id), list = [].concat(id),
 		reqexp = /\brequire\s*\(\s*(['"]).+?\1\s*\)/g,
-		idexp = /(['"])(.+?)\1/;
+		idexp = /(['"])(.+?)\1/, ext = '.js';
 
 	function resolve(id, base) {
 		if (id.slice(-ext.length) === ext) { id = id.slice(0, -ext.length); }
