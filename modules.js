@@ -1,10 +1,10 @@
 /**
- * Provides
+ * Provides wrapping of modules for use in the browser.
  **/
 "use strict";
 
 var fs = require('fs'), path = require('path'), extexp = /\.(\w+)$/,
-	wrapper = 'define({id},function(require,exports,module){{content}\n});';
+	wrapper = 'define({id},function(require,exports,module){{content}\n});\n';
 
 function translate(name, uri, content, opts) {
 	var ext = uri.match(extexp)[1];
@@ -31,6 +31,7 @@ function getOptions(opts) {
 	opts.maxAge = opts.maxAge || 0;
 	opts.compress = opts.compress || false;
 	opts.map = opts.map || {};
+	opts.map.require = opts.map.require || __dirname + '/require';
 	opts.translate = opts.translate || {};
 	opts.forbid = (opts.forbid || []).map(function(p) {
 		return path.resolve(opts.root, p);
@@ -49,9 +50,12 @@ function module(id, opts, next) {
 		if (err) return next(err);
 		fs.readFile(uri, 'utf8', function(err, content) {
 			if (err) return next(err);
-			content = translate(id, uri, content, opts);
-			content = wrapper.replace('{id}', id)
-				.replace('{content}', content);
+			if (id !== 'require') {
+				content = translate(id, uri, content, opts);
+				content = wrapper
+					.replace('{id}', JSON.stringify(id))
+					.replace('{content}', content);
+			}
 			if (opts.compress) {
 				opts.compress(content, function(err, content) {
 					if (err) return next(err);
@@ -93,15 +97,7 @@ function modules(modules, opts, next) {
 	}
 
 	if (opts.require) { // define require if all modules
-		fs.stat(opts.require, function(err, stat) {
-			if (err) return next(err);
-			modified = stat.mtime;
-			fs.readFile(opts.require, function(err, content) {
-				if (err) return next(err);
-				out += content;
-				loop();
-			});
-		});
+		length = modules.unshift('require');
 	} else { // allow this package to be before require.js
 		out +=
 			'if (!this.define) { this.define = (function() {\n' +
@@ -109,8 +105,8 @@ function modules(modules, opts, next) {
 			'	var defs = define.defs = {};\n' +
 			'	return define;\n' +
 			'}()); }\n\n';
-		loop();
 	}
+	loop();
 }
 
 /**

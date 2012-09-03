@@ -1,0 +1,18 @@
+{
+	"name": "modules",
+	"description": "CommonJS modules for the browser",
+	"version": "0.1.0",
+	"author": "Andy VanWagoner <thetalecrafter@gmail.com>",
+	"keywords": [
+		"module",
+		"require",
+		"commonjs"
+	],
+	"repository": "git://github.com/thetalecrafter/modules.git",
+	"main": "modules",
+	"engines": { "node": "*" },
+	"devDependencies": {
+		"express": ">= 3.0"
+	}
+}
+

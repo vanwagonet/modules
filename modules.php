@@ -12,8 +12,8 @@
  *  When this script is called from the command line Modules::module($name) is output
  *   php ./modules.php [name] [config_file]; # both arguments are optional, config_file nust have a .config.json extension
  *
- * Copyright 2011, Andy VanWagoner
- * Released under the MIT, BSD, and GPL Licenses.
+ * Copyright 2012, Andy VanWagoner
+ * Released under the MIT License.
  **/
 class Modules {
 	/**
@@ -30,7 +30,7 @@ class Modules {
 				'indent'   => '	',
 				'headers'  => array( 'Content-Type'=>true, 'Expires'=>'+30 days', 'Last-Modified'=>true ),
 				'compress' => false,
-				'require'  => dirname(__FILE__).'/modules.require.js'
+				'require'  => dirname(__FILE__).'/require.js'
 			);
 			self::loadDefaultOptions(dirname(__FILE__).'/modules.config.json');
 		}
@@ -186,16 +186,17 @@ class Modules {
 
 			// convert filename to name
 			$name = substr($file, $prefix, -3); // remove mod_dir prefix and .js suffix
+			if ('/index' === substr($name, -6)) $name = substr($name, 0, -6);
 			$modules[$name] = $file;
 		}
 		return $modules;
 	}
 
 	protected static function printModule($name, $filename, array &$opts) {
-		return "/* ==MODULE== $name */"
-			."require.define('$name',function(module,exports){\n"
-				.file_get_contents($filename)
-			."\n/* ==ENDMODULE== $name */});\n";
+		if ('require' === $name) return self::printRequire($opts);
+		return 'define('.json_encode($name).',function(require,exports,module){'.
+				file_get_contents($filename).
+			"\n});\n";
 	}
 
 	protected static function printRequire(array &$opts) {

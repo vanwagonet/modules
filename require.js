@@ -7,9 +7,9 @@
 		defineProperties = Object.defineProperties || function(){};
 
 	function decode(s) { area.innerHTML = String(s); return area.value; }
-	path = main && decode(main.getAttribute('data-path')) || '/module/';
-	main = main && decode(main.getAttribute('data-main')) || false;
-	function ready() { ensure(main, null, function() { require(main); }); }
+	path = main && decode(main.src).replace(/[^\/\\]*$/, '');
+	main = main && decode(main.getAttribute('data-main') || '') || false;
+	function ready() { ensure(main, function() { require(main); }); }
 	if (main) {
 		if (doc.readyState === 'complete') { setTimeout(ready, 1); }
 		else if (!doc.addEventListener) { global.attachEvent('load', ready); }
@@ -66,8 +66,8 @@
 		var head = doc.head || doc.getElementsByTagName('head')[0];
 		function script(id, done) {
 			var s = doc.createElement('script');
-			s.src = resolve(id, path) + ext;
-			s.onload = done;
+			s.src = path + id + ext;
+			s.onload = s.onerror = done;
 			s.async = s.defer = true;
 			return head.appendChild(s);
 		}
