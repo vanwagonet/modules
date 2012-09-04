@@ -132,7 +132,12 @@ function dependencies(id, opts, next) {
 		if (!stack.length) return next(null, list);
 		var id = stack.pop(), uri = getUri(id, opts);
 		fs.readFile(uri, 'utf8', function(err, content) {
-			if (err) return ('ENOENT' === err.code) ? loop() : next(err);
+			if (err) {
+				if ('ENOENT' === err.code) {
+					list.splice(list.indexOf(id), 1);
+					return loop();
+				} else { return next(err); }
+			}
 			content = translate(id, uri, content, opts);
 			var matches = content.match(reqexp),
 				m, mm = matches && matches.length;
