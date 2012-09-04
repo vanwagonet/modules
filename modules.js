@@ -3,8 +3,7 @@
  **/
 "use strict";
 
-var fs = require('fs'), path = require('path'), extexp = /\.(\w+)$/,
-	wrapper = 'define({id},function(require,exports,module){{content}\n});\n';
+var fs = require('fs'), path = require('path'), extexp = /\.(\w+)$/;
 
 function translate(name, uri, content, opts) {
 	var ext = uri.match(extexp)[1];
@@ -52,9 +51,8 @@ function module(id, opts, next) {
 			if (err) return next(err);
 			if (id !== 'require') {
 				content = translate(id, uri, content, opts);
-				content = wrapper
-					.replace('{id}', JSON.stringify(id))
-					.replace('{content}', content);
+				content = 'define(' + JSON.stringify(id) +
+					',function(require,exports,module){' + content + '\n});\n';
 			}
 			if (opts.compress) {
 				opts.compress(content, function(err, content) {

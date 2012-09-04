@@ -27,7 +27,7 @@
 		if (!modules[id]) {
 			var module = (modules[id] = { exports:{}, id:id, uri:uri, loaded:false, parent:parent, children:[] }),
 				req = module.require = function(sid) { return require(sid, module); };
-			defineProperties(module, { id:READONLY, uri:READONLY, parent:READONLY, children:READONLY, require:READONLY });
+			defineProperties(module, { id:READONLY, uri:READONLY, children:READONLY, require:READONLY });
 
 			if (!global.require.main) { // assume first executed module is main
 				global.require.main = module;
@@ -45,6 +45,7 @@
 			module.loaded = true;
 			defineProperties(module, { exports:READONLY, loaded:READONLY });
 		}
+		modules[id].parent = parent;
 		return modules[id].exports;
 	}
 
@@ -96,5 +97,6 @@
 	global.require.resolve = resolve;
 	global.require.cache = modules;
 	defineProperties(global.require, { ensure:READONLY, resolve:READONLY, cache:READONLY });
+	define('require', function(r,e,module) { module.exports = module.parent ? module.parent.require : global.require; });
 }(this));
 
