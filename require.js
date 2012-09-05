@@ -11,7 +11,7 @@
 	main = main && decode(main.getAttribute('data-main') || '') || false;
 	function ready() { ensure(main, function() { require(main); }); }
 	if (main) {
-		if (doc.readyState === 'complete') { setTimeout(ready, 1); }
+		if (doc.readyState !== 'loading') { setTimeout(ready, 1); }
 		else if (!doc.addEventListener) { global.attachEvent('load', ready); }
 		else { doc.addEventListener('DOMContentLoaded', ready); }
 	}
