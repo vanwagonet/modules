@@ -22,9 +22,12 @@ Some of the motivation for this project can be found in [this article](http://th
 
 Server JavaScript (Node.js + express)
 
+Install modules from npm: `npm install modules`
+
 ```javascript
 var app = express(), modules = require('modules');
 app.use(modules.middleware({
+	// all of the options are optional
 	root: __dirname, // server side root directory for modules
 	path: '/module/', // url path for modules
 	maxAge: 24 * 60 * 60 * 1000, // Cache-Control max-age for modules
@@ -50,7 +53,7 @@ app.use(modules.middleware({
 PHP:
 
 ```php
-<?= Modules::script() ?>
+<?= Modules::script('module-name', $opts) ?>
 ```
 
 Client JavaScript (using modules):
@@ -62,7 +65,7 @@ modules.exports = function() {}; // this works too
 
 Object.keys(module); // [ 'exports', 'id', 'uri', 'loaded', 'parent', 'children' ];
 require.ensure('module/gamma', function() {
-	// gamma an all of its deep dependencies have been loaded asynchronously
+	// gamma and all of its deep dependencies have been loaded asynchronously
 	var gamma = require('module/gamma');
 });
 ```
@@ -91,4 +94,3 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
