@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Modules : CommonJS module framework for use in web applications" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Modules</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/thetalecrafter/modules">View on GitHub</a>
+
+          <h1 id="project_title">Modules</h1>
+          <h2 id="project_tagline">CommonJS module framework for use in web applications</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/thetalecrafter/modules/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/thetalecrafter/modules/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>modules</h1>
+
+<p>CommonJS modules implementation for web applications written by Andy VanWagoner
+(<a href="http://github.com/thetalecrafter">thetalecrafter</a>).</p>
+
+<p>Some of the motivation for this project can be found in <a href="http://thetalecrafter.wordpress.com/2011/09/22/commonjs-in-the-browser/">this article</a>.</p>
+
+<h2>Client-Side Features</h2>
+
+<ul>
+<li>Modules 1.1.1 implementation for in-browser use</li>
+<li>module.require function similar to nodejs implementation</li>
+<li>require.ensure(id, callback) for async </li>
+</ul><h2>Server-Side Features</h2>
+
+<ul>
+<li>Automatically put all modules into a single js file</li>
+<li>Configure minification using your favorite compressor</li>
+<li>Manage configurations in a json file</li>
+<li>middleware for express</li>
+</ul><h2>Usage</h2>
+
+<p>Server JavaScript (Node.js + express)</p>
+
+<p>Install modules from npm: <code>npm install modules</code></p>
+
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="nx">express</span><span class="p">(),</span> <span class="nx">modules</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'modules'</span><span class="p">);</span>
+<span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">modules</span><span class="p">.</span><span class="nx">middleware</span><span class="p">({</span>
+    <span class="c1">// all of the options are optional</span>
+    <span class="nx">root</span><span class="o">:</span> <span class="nx">__dirname</span><span class="p">,</span> <span class="c1">// server side root directory for modules</span>
+    <span class="nx">path</span><span class="o">:</span> <span class="s1">'/module/'</span><span class="p">,</span> <span class="c1">// url path for modules</span>
+    <span class="nx">maxAge</span><span class="o">:</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span> <span class="c1">// Cache-Control max-age for modules</span>
+    <span class="nx">compress</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">str</span><span class="p">,</span> <span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// do compression using uglify, or your prefered compressor</span>
+        <span class="nx">done</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">compressed</span><span class="p">);</span> <span class="c1">// when done or if there is an error</span>
+    <span class="p">},</span>
+    <span class="nx">map</span><span class="o">:</span> <span class="p">{</span> <span class="nx">jquery</span><span class="o">:</span><span class="s1">'./lib/jquery-wrapped.min.js'</span> <span class="p">},</span> <span class="c1">// map pretty names to filenames</span>
+    <span class="nx">translate</span><span class="o">:</span> <span class="p">{</span>
+        <span class="nx">html</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">filename</span><span class="p">,</span> <span class="nx">content</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// convert html templates to js functions, or do whatever</span>
+            <span class="c1">//  you want to convert file types to commonjs modules</span>
+            <span class="k">return</span> <span class="s1">'exports.template = '</span> <span class="o">+</span> <span class="nx">_</span><span class="p">.</span><span class="nx">template</span><span class="p">(</span><span class="nx">content</span><span class="p">).</span><span class="nx">source</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nx">forbid</span><span class="o">:</span> <span class="p">[</span> <span class="c1">// blacklist files or folders you don't want accessible.</span>
+        <span class="s1">'./config/'</span><span class="p">,</span>
+        <span class="s1">'../server.js'</span>
+    <span class="p">]</span>
+<span class="p">}));</span>
+</pre></div>
+
+<p>PHP:</p>
+
+<div class="highlight"><pre><span class="o">&lt;?=</span> <span class="nx">Modules</span><span class="o">::</span><span class="na">script</span><span class="p">(</span><span class="s1">'module-name'</span><span class="p">,</span> <span class="nv">$opts</span><span class="p">)</span> <span class="cp">?&gt;</span><span class="x"></span>
+</pre></div>
+
+<p>Client JavaScript (using modules):</p>
+
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">mod</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'some/module'</span><span class="p">);</span> <span class="c1">// returns exports of that module</span>
+<span class="nx">exports</span><span class="p">.</span><span class="nx">a</span> <span class="o">=</span> <span class="s1">'a'</span><span class="p">;</span> <span class="c1">// export stuff</span>
+<span class="nx">modules</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{};</span> <span class="c1">// this works too</span>
+
+<span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">module</span><span class="p">);</span> <span class="c1">// [ 'exports', 'id', 'uri', 'loaded', 'parent', 'children' ];</span>
+<span class="nx">require</span><span class="p">.</span><span class="nx">ensure</span><span class="p">(</span><span class="s1">'module/gamma'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// gamma and all of its deep dependencies have been loaded asynchronously</span>
+    <span class="kd">var</span> <span class="nx">gamma</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'module/gamma'</span><span class="p">);</span>
+<span class="p">});</span>
+</pre></div>
+
+<h2>License</h2>
+
+<p>(The MIT License)</p>
+
+<p>Copyright (c) 2012 Andy VanWagoner</p>
+
+<p>Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:</p>
+
+<p>The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.</p>
+
+<p>THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Modules maintained by <a href="https://github.com/thetalecrafter">thetalecrafter</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
