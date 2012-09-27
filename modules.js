@@ -117,7 +117,7 @@ function dependencies(id, opts, next) {
 
 	function resolve(id, base) {
 		if (id.slice(-ext.length) === ext) { id = id.slice(0, -ext.length); }
-		if (id.charAt(0) === '.') { id = base.replace(/\w+$/, id); }
+		if (id.charAt(0) === '.') { id = base.replace(/[^\/]+$/, id); }
 		var orig = id.split('/'), terms = [], i, l = orig.length;
 		for (i = 0; i < l; ++i) {
 			if (orig[i] === '..') { terms.pop(); }
