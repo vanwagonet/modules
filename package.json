@@ -1,7 +1,7 @@
 {
 	"name": "modules",
 	"description": "CommonJS modules for the browser",
-	"version": "0.1.5",
+	"version": "0.2.0",
 	"author": "Andy VanWagoner <thetalecrafter@gmail.com>",
 	"keywords": [
 		"module",
@@ -15,4 +15,3 @@
 		"express": ">= 3.0"
 	}
 }
-

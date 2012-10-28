@@ -1,15 +1,16 @@
 (function(global){
 	"use strict";
 
-	var doc = global.document, modules = {}, defs = {}, path, ext = '.js',
+	var doc = global.document, modules = {}, defs = {}, path, ext = '.js', buns, bunsMap = {},
 		area = doc.createElement('textarea'), main = doc.getElementById('require-script'),
 		READONLY = { enumerable:true, writable:false, configurable:false },
 		defineProperties = Object.defineProperties || function(){};
 
 	function decode(s) { area.innerHTML = String(s); return area.value; }
 	path = main && decode(main.src).replace(/[^\/\\]*$/, '');
+	buns = JSON.parse(main && decode(main.getAttribute('data-bundles'))) || {};
 	main = main && decode(main.getAttribute('data-main') || '') || false;
-	function ready() { ensure(main, function() { require(main); }); }
+	function ready() { ensure(main, 0, function() { require(main); }); }
 	if (main) {
 		if (doc.readyState !== 'loading') { setTimeout(ready, 1); }
 		else if (!doc.addEventListener) { global.attachEvent('load', ready); }
@@ -17,9 +18,16 @@
 	}
 
 	function define(id, fn) { defs[id] = fn; }
-	if (global.define) { // there were packages loaded before now.
-		for (var id in global.define.defs) { defs[id] = global.define.defs[id]; }
+	define.map = function(o) { for (var m in o) { define(m, o[m]); } };
+	if (global.define) { define.map(global.define.defs); } // there were bundles loaded before now.
+
+	function defineBundle(id, bundle) {
+			buns[id] = bundle;
+			var modules = bundle.modules, m, mm = modules.length;
+			for (m = 0; m < mm; ++m) { bunsMap[modules[m]] = id; }
 	}
+	defineBundle.map = function(o) { for (var b in o) { defineBundle(b, o[b]); } };
+	defineBundle.map(buns); // make sure we map all of the bundles in the attribute
 
 	function require(oid, parent) {
 		var id = resolve(oid, parent && parent.id), uri = resolve(id, path) + ext;
@@ -34,7 +42,8 @@
 				defineProperties(global.require, { main:READONLY });
 			}
 
-			req.ensure = function(sid, fn) { return ensure(resolve(sid, id), fn); };
+			req.ensure = function(sid, fn) { ensure(sid, id, fn); };
+			req.ensure.all = function(sids, fn) { ensureAll(sids, id, fn); };
 			req.resolve = function(sid) { return resolve(sid, id); };
 			req.main = global.require.main;
 			req.cache = modules;
@@ -61,7 +70,8 @@
 		return terms.join('/');
 	}
 
-	function ensure(id, fn) {
+	function ensure(id, pid, fn) {
+		id = resolve(id, pid);
 		if (defs[id]) { return fn(); } // assume all dependencies already loaded
 
 		var head = doc.head || doc.getElementsByTagName('head')[0];
@@ -73,30 +83,51 @@
 			return head.appendChild(s);
 		}
 
+		function get(deps, map) {
+			var d, dd = deps.length, left = dd;
+			function check() { if (--left <= 0) { fn(); } }
+			for (d = 0; d < dd; ++d) {
+				if (map[deps[d]]) { --left; }
+				else { script(deps[d], check); }
+			}
+			if (left <= 0) { fn(); }
+		}
+
 		if (/\.json$/i.test(id)) { return script(id, fn); }
+
+		if (bunsMap[id]) {
+			var scripts = doc.getElementsByTagName('script'),
+				map = {}, s, ss = scripts.length, bun, m;
+			for (s = 0; s < ss; ++s) {
+				bun = scripts[s].src.match(/([^\/]+\.bundle)\.js$/);
+				if (bun) { map[bun[1]] = 1; }
+			}
+			for (m in defs) { map[m] = defs[m]; }
+			scripts = buns[bunsMap[id]].dependencies || [];
+			scripts.unshift(bunsMap[id] + '.bundle');
+			return get(scripts, map);
+		}
 
 		var xhr = new global.XMLHttpRequest();
 		xhr.open('GET', path + id + '/dependencies.json', true);
-		xhr.onload = function() {
-			var mods = JSON.parse(xhr.responseText),
-				m, mm = mods.length, left = mm;
-			function check() { if (!--left) { fn(); } }
-			for (m = 0; m < mm; ++m) {
-				if (defs[mods[m]]) { --left; }
-				else { script(mods[m], check); }
-			}
-			if (!left) { fn(); }
-		};
+		xhr.onload = function() { get(JSON.parse(xhr.responseText), defs); };
 		xhr.send();
+	}
+
+	function ensureAll(ids, pid, fn) {
+		var i, ii = ids.length, left = ii;
+		function check() { if (--left <= 0) { fn(); } }
+		for (i = 0; i < ii; ++i) { ensure(ids[i], pid, check); }
 	}
 
 	global.global = global;
 	global.define = define;
+	global.define.bundle = defineBundle;
 	global.require = function(id) { return require(id); };
-	global.require.ensure = ensure;
+	global.require.ensure = function(id, fn) { ensure(id, 0, fn); };
+	global.require.ensure.all = function(ids, fn) { ensureAll(ids, 0, fn); };
 	global.require.resolve = resolve;
 	global.require.cache = modules;
 	defineProperties(global.require, { ensure:READONLY, resolve:READONLY, cache:READONLY });
 	define('require', function(r,e,module) { module.exports = module.parent ? module.parent.require : global.require; });
 }(this));
-

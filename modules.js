@@ -16,6 +16,8 @@ function translate(name, uri, content, opts) {
 function getUri(id, opts) {
 	var uri = opts.map[id] || id, f, ff = opts.forbid, forbid;
 	uri = path.resolve(opts.root, uri) + (extexp.test(uri) ? '' : '.js');
+	// require and bundles.json can be in forbidden places
+	if ('bundles.json' === id || 'require' === id) { return uri; }
 	for (f = 0; f < ff; ++f) {
 		forbid = opts.forbid[f];
 		if (uri.slice(0, forbid.length) === forbid) return '';
@@ -29,6 +31,7 @@ function getOptions(opts) {
 	opts.path = opts.path || '/module/';
 	opts.maxAge = opts.maxAge || 0;
 	opts.compress = opts.compress || false;
+	opts.bundles = opts.bundles || false;
 	opts.map = opts.map || {};
 	opts.map.require = opts.map.require || __dirname + '/require';
 	opts.translate = opts.translate || {};
@@ -36,6 +39,42 @@ function getOptions(opts) {
 		return path.resolve(opts.root, p);
 	});
 	return opts;
+}
+
+/**
+ * Prints the code for the bundles, including all dependencies
+ **/
+function bundles(bundleMap, opts, next) {
+	opts = getOptions(opts);
+	var stack = Object.keys(bundleMap).reverse(), result = {}, map = {};
+
+	function done() {
+		for (var name in result) {
+			var deps = {};
+			result[name].dependencies.forEach(function(id) { deps[map[id] || id] = 1; });
+			result[name].dependencies = Object.keys(deps);
+		}
+		next(null, result);
+	}
+
+	function loop() {
+		if (!stack.length) return done();
+		var name = stack.pop(),
+			include = bundleMap[name].modules,
+			exclude = bundleMap[name].dependencies || [];
+		dependencies(exclude, opts, function(err, exclude) {
+			if (err) { return next(err); }
+			dependencies(include, opts, function(err, include) {
+				if (err) { return next(err); }
+				var depends = include.filter(function(id) { return ~exclude.indexOf(id); });
+				include = include.filter(function(id) { return !~exclude.indexOf(id); });
+				include.forEach(function(id) { map[id] = map[id] || (name + '.bundle'); });
+				result[name] = { modules:include, dependencies:depends };
+				loop();
+			});
+		});
+	}
+	loop();
 }
 
 /**
@@ -49,18 +88,26 @@ function module(id, opts, next) {
 		if (err) return next(err);
 		fs.readFile(uri, 'utf8', function(err, content) {
 			if (err) return next(err);
-			if (id !== 'require') {
-				content = translate(id, uri, content, opts);
-				content = 'define(' + JSON.stringify(id) +
-					',function(require,exports,module){' + content + '\n});\n';
-			}
-			if (opts.compress) {
-				opts.compress(content, function(err, content) {
-					if (err) return next(err);
+			if ('bundles.json' === id) { 
+				bundles(JSON.parse(content), opts, function(err, content) {
+					if (err) { return next(err); }
+					content = 'define.bundle.map(' + JSON.stringify(content) + ');\n';
 					next(null, content, stat.mtime);
 				});
 			} else {
-				next(null, content, stat.mtime);
+				if ('require' !== id) {
+					content = translate(id, uri, content, opts);
+					content = 'define(' + JSON.stringify(id) +
+						',function(require,exports,module){' + content + '\n});\n';
+				}
+				if (opts.compress) {
+					opts.compress(content, function(err, content) {
+						if (err) return next(err);
+						next(null, content, stat.mtime);
+					});
+				} else {
+					next(null, content, stat.mtime);
+				}
 			}
 		});
 	});
@@ -70,7 +117,7 @@ function module(id, opts, next) {
  * Prints the code for the modules, including boilerplate code necessary in the browser.
  **/
 function modules(modules, opts, next) {
-	var modified = new Date(0), error,
+	var modified = new Date(0),
 		length = modules.length, m = 0,
 		out = '';
 
@@ -185,5 +232,5 @@ exports.middleware = middleware;
 exports.dependencies = dependencies;
 exports.modules = modules;
 exports.module = module;
+exports.bundles = bundles;
 exports.getOptions = getOptions;
-
