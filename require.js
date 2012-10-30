@@ -24,7 +24,7 @@
 	function defineBundle(id, bundle) {
 			buns[id] = bundle;
 			var modules = bundle.modules, m, mm = modules.length;
-			for (m = 0; m < mm; ++m) { bunsMap[modules[m]] = id; }
+			for (m = 0; m < mm; ++m) { bunsMap[modules[m]] = bunsMap[modules[m]] || id; }
 	}
 	defineBundle.map = function(o) { for (var b in o) { defineBundle(b, o[b]); } };
 	defineBundle.map(buns); // make sure we map all of the bundles in the attribute
