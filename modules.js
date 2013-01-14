@@ -13,16 +13,34 @@ function translate(name, uri, content, opts) {
 	return 'module.exports = ' + JSON.stringify(content); // export file as json string
 }
 
-function getUri(id, opts) {
+function getUri(id, opts, next) {
 	var uri = opts.map[id] || id, f, ff = opts.forbid, forbid;
-	uri = path.resolve(opts.root, uri) + (extexp.test(uri) ? '' : '.js');
-	// require and bundles.json can be in forbidden places
-	if ('bundles.json' === id || 'require' === id) { return uri; }
-	for (f = 0; f < ff; ++f) {
-		forbid = opts.forbid[f];
-		if (uri.slice(0, forbid.length) === forbid) return '';
+	uri = path.resolve(opts.root, uri);
+	// require, bundles.json, and mapped modules can be in forbidden places
+	if ('bundles.json' !== id && 'require' !== id && !opts.map[id]) {
+		if ('..' === path.relative(opts.root, uri).slice(0, 2)) {
+			return next(new Error('Forbidden'), '');
+		}
+		for (f = 0; f < ff; ++f) {
+			forbid = opts.forbid[f];
+			if (uri.slice(0, forbid.length) === forbid) {
+				return next(new Error('Forbidden'), '');
+			}
+		}
 	}
-	return uri;
+	fs.stat(uri, function(err, stats) {
+		if (err) {
+			return fs.exists(uri + '.js', function(exists) {
+				return next(null, uri + (exists ? '.js' : ''));
+			});
+		}
+		if (stats.isDirectory()) {
+			return fs.exists(uri + '/index.js', function(exists) {
+				return next(null, uri + (exists ? '/index.js' : ''));
+			});
+		}
+		return next(null, uri);
+	});
 }
 
 function getOptions(opts) {
@@ -83,32 +101,33 @@ function bundles(bundleMap, opts, next) {
 function module(id, opts, next) {
 	if (id.slice(-3) === '.js') id = id.slice(0, -3);
 	opts = getOptions(opts);
-	var uri = getUri(id, opts);
-	fs.stat(uri, function(err, stat) {
-		if (err) return next(err);
-		fs.readFile(uri, 'utf8', function(err, content) {
-			if (err) return next(err);
-			if ('bundles.json' === id) { 
-				bundles(JSON.parse(content), opts, function(err, content) {
-					if (err) { return next(err); }
-					content = 'define.bundle.map(' + JSON.stringify(content) + ');\n';
-					next(null, content, stat.mtime);
-				});
-			} else {
-				if ('require' !== id) {
-					content = translate(id, uri, content, opts);
-					content = 'define(' + JSON.stringify(id) +
-						',function(require,exports,module){' + content + '\n});\n';
-				}
-				if (opts.compress) {
-					opts.compress(content, function(err, content) {
-						if (err) return next(err);
+	getUri(id, opts, function(err, uri) {
+		fs.stat(uri, function(err, stat) {
+			if (err) { return next(err); }
+			fs.readFile(uri, 'utf8', function(err, content) {
+				if (err) return next(err);
+				if ('bundles.json' === id) { 
+					bundles(JSON.parse(content), opts, function(err, content) {
+						if (err) { return next(err); }
+						content = 'define.bundle.map(' + JSON.stringify(content) + ');\n';
 						next(null, content, stat.mtime);
 					});
 				} else {
-					next(null, content, stat.mtime);
+					if ('require' !== id) {
+						content = translate(id, uri, content, opts);
+						content = 'define(' + JSON.stringify(id) +
+							',function(require,exports,module){' + content + '\n});\n';
+					}
+					if (opts.compress) {
+						opts.compress(content, function(err, content) {
+							if (err) return next(err);
+							next(null, content, stat.mtime);
+						});
+					} else {
+						next(null, content, stat.mtime);
+					}
 				}
-			}
+			});
 		});
 	});
 }
@@ -175,24 +194,26 @@ function dependencies(id, opts, next) {
 
 	function loop() {
 		if (!stack.length) return next(null, list);
-		var id = stack.pop(), uri = getUri(id, opts);
-		fs.readFile(uri, 'utf8', function(err, content) {
-			if (err) {
-				if ('ENOENT' === err.code) {
-					list.splice(list.indexOf(id), 1);
-					return loop();
-				} else { return next(err); }
-			}
-			content = translate(id, uri, content, opts);
-			var matches = content.match(reqexp),
-				m, mm = matches && matches.length;
-			for (m = 0; m < mm; ++m) {
-				var rid = resolve(matches[m].match(idexp)[2], id);
-				if (!~list.indexOf(rid)) {
-					list[list.length] = stack[stack.length] = rid;
+		var id = stack.pop();
+		getUri(id, opts, function(err, uri) {
+			fs.readFile(uri, 'utf8', function(err, content) {
+				if (err) {
+					if ('ENOENT' === err.code) {
+						list.splice(list.indexOf(id), 1);
+						return loop();
+					} else { return next(err); }
 				}
-			}
-			loop();
+				content = translate(id, uri, content, opts);
+				var matches = content.match(reqexp),
+					m, mm = matches && matches.length;
+				for (m = 0; m < mm; ++m) {
+					var rid = resolve(matches[m].match(idexp)[2], id);
+					if (!~list.indexOf(rid)) {
+						list[list.length] = stack[stack.length] = rid;
+					}
+				}
+				loop();
+			});
 		});
 	}
 	loop();
