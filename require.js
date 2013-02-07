@@ -1,10 +1,11 @@
 (function(global){
-	"use strict";
+	'use strict';
 
 	var doc = global.document, modules = {}, defs = {}, path, ext = '.js', buns, bunsMap = {},
 		area = doc.createElement('textarea'), main = doc.getElementById('require-script'),
 		READONLY = { enumerable:true, writable:false, configurable:false },
 		defineProperties = Object.defineProperties || function(){};
+	if (!defineProperties({ test:true }, { test:READONLY }).test) { defineProperties = function(){}; } // detect disfunction
 
 	function decode(s) { area.innerHTML = String(s); return area.value; }
 	path = main && decode(main.src).replace(/[^\/\\]*$/, '');
