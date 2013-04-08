@@ -5,12 +5,12 @@
 
 var fs = require('fs'), path = require('path'), extexp = /\.(\w+)$/;
 
-function translate(name, uri, content, opts) {
+function translate(name, uri, buffer, opts) {
 	var ext = uri.match(extexp)[1];
-	if (opts.translate[ext]) return opts.translate[ext](name, uri, content, opts);
-	if ('js' === ext) return content;
-	if ('json' === ext) return 'module.exports = ' + content;
-	return 'module.exports = ' + JSON.stringify(content); // export file as json string
+	if (opts.translate[ext]) return opts.translate[ext](name, uri, buffer, opts);
+	if ('js' === ext) return buffer.toString('utf8');
+	if ('json' === ext) return 'module.exports = ' + buffer.toString('utf8');
+	return 'module.exports = ' + JSON.stringify(content.toString('utf8')); // export file as json string
 }
 
 function getUri(id, opts, next) {
@@ -104,8 +104,9 @@ function module(id, opts, next) {
 	getUri(id, opts, function(err, uri) {
 		fs.stat(uri, function(err, stat) {
 			if (err) { return next(err); }
-			fs.readFile(uri, 'utf8', function(err, content) {
+			fs.readFile(uri, function(err, buffer) {
 				if (err) return next(err);
+				var content = buffer.toString('utf8');
 				if ('bundles.json' === id) { 
 					bundles(JSON.parse(content), opts, function(err, content) {
 						if (err) { return next(err); }
@@ -114,7 +115,7 @@ function module(id, opts, next) {
 					});
 				} else {
 					if ('require' !== id) {
-						content = translate(id, uri, content, opts);
+						content = translate(id, uri, buffer, opts);
 						content = 'define(' + JSON.stringify(id) +
 							',function(require,exports,module){' + content + '\n});\n';
 					}
@@ -196,14 +197,14 @@ function dependencies(id, opts, next) {
 		if (!stack.length) return next(null, list);
 		var id = stack.pop();
 		getUri(id, opts, function(err, uri) {
-			fs.readFile(uri, 'utf8', function(err, content) {
+			fs.readFile(uri, function(err, buffer) {
 				if (err) {
 					if ('ENOENT' === err.code) {
 						list.splice(list.indexOf(id), 1);
 						return loop();
 					} else { return next(err); }
 				}
-				content = translate(id, uri, content, opts);
+				var content = translate(id, uri, buffer, opts);
 				var matches = content.match(reqexp),
 					m, mm = matches && matches.length;
 				for (m = 0; m < mm; ++m) {
