@@ -10,11 +10,11 @@ function translate(name, uri, buffer, opts) {
 	if (opts.translate[ext]) return opts.translate[ext](name, uri, buffer, opts);
 	if ('js' === ext) return buffer.toString('utf8');
 	if ('json' === ext) return 'module.exports = ' + buffer.toString('utf8');
-	return 'module.exports = ' + JSON.stringify(content.toString('utf8')); // export file as json string
+	return 'module.exports = ' + JSON.stringify(buffer.toString('utf8')); // export file as json string
 }
 
 function getUri(id, opts, next) {
-	var uri = opts.map[id] || id, f, ff = opts.forbid, forbid;
+	var uri = opts.map[id] || id, f, ff = opts.forbid, forbid, forbidden;
 	uri = path.resolve(opts.root, uri);
 	// require, bundles.json, and mapped modules can be in forbidden places
 	if ('bundles.json' !== id && 'require' !== id && !opts.map[id]) {
@@ -23,9 +23,9 @@ function getUri(id, opts, next) {
 		}
 		for (f = 0; f < ff; ++f) {
 			forbid = opts.forbid[f];
-			if (uri.slice(0, forbid.length) === forbid) {
-				return next(new Error('Forbidden'), '');
-			}
+			forbidden = forbid.test ? forbid.test(uri) :
+				(uri.slice(0, forbid.length) === forbid);
+			if (forbidden) { return next(new Error('Forbidden'), ''); }
 		}
 	}
 	fs.stat(uri, function(err, stats) {
