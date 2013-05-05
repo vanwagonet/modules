@@ -15,3 +15,6 @@ Desktop.ini
 .swp
 .*.sw[a-z]
 Session.vim
+
+# Node
+node_modules

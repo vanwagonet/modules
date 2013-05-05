@@ -1,17 +1,27 @@
 {
 	"name": "modules",
 	"description": "CommonJS modules for the browser",
-	"version": "0.2.5",
-	"author": "Andy VanWagoner <thetalecrafter@gmail.com>",
+	"version": "0.3.0",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/thetalecrafter/modules"
+	},
+	"author": {
+		"name": "Andy VanWagoner",
+		"email": "thetalecrafter@gmail.com"
+	},
 	"keywords": [
 		"module",
 		"require",
-		"commonjs"
+		"commonjs",
+		"dependency"
 	],
-	"repository": "git://github.com/thetalecrafter/modules.git",
-	"main": "modules",
+	"main": "index",
 	"engines": { "node": "*" },
 	"devDependencies": {
-		"express": ">= 3.0"
+		"express": "~3.0",
+		"grunt": "~0.4.0",
+		"grunt-contrib-jshint": "*",
+		"grunt-contrib-nodeunit": "*"
 	}
 }
