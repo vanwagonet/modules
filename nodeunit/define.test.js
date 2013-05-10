@@ -22,21 +22,15 @@ function mockWindow() {
 	var requireScript = mockScript({ src:'/modules/define.js', 'data-main':'main' }),
 		window = {
 			document:{
-				// elements
-				head:{},
-				scripts:[ requireScript ],
-				'require-script':requireScript,
-
-				getElementById:function(id) {
-					return ('object' === typeof this[id]) ? this[id] : null;
-				},
-				getElementsByTagName:function(tag) {
-					if ('head' === tag) { return [ this.head ]; }
-					if ('script' === tag) { return this.scripts; }
-					return [];
+				$selectors:{
+					'[data-main]':requireScript
 				},
 				querySelector:function(selector) {
-					return null;
+					var $sels = this.$selectors;
+					return selector.split(',')
+						.filter(function(s) { return s in $sels; })
+						.map(function(s) { return $sels[s] })
+						[0] || null;
 				}
 			}
 		};
@@ -58,28 +52,20 @@ module.exports = {
 	testPresence: function(test) {
 		var window = this.window, define = window.define, wrequire = window.require;
 
-		test.expect(17);
+		test.expect(10);
 
-		test.throws(function() { window.global = null; });
 		test.strictEqual(window.global, window, 'Global object (window) is available as `global`.');
 
-		test.throws(function() { window.define = null; }, '`define` should not be writable.');
-		test.throws(function() { define.bundle = null; }, '`define.bundle` should not be writable.');
 		test.strictEqual(typeof define, 'function', '`define` should be a global function.');
 		test.strictEqual(typeof define.bundle, 'function', '`define.bundle` should be a function.');
 		test.deepEqual(Object.keys(define).sort(), [ 'bundle' ].sort(),
 			'`define` should have properties [ "bundle" ].');
 
-		test.throws(function() { window.require = null; }, '`require` should not be writable.');
-		test.throws(function() { wrequire.resolve = null; }, '`require.resolve` should not be writable.');
-		test.throws(function() { wrequire.ensure = null; }, '`require.ensure` should not be writable.');
-		test.throws(function() { wrequire.cache = null; }, '`require.cache` should not be writable.');
-	//	test.throws(function() { wrequire.main = null; }, '`require.main` should not be writable.'); // Main is writeable until the first require call
 		test.strictEqual(typeof wrequire, 'function', '`require` should be a global function.');
 		test.strictEqual(typeof wrequire.resolve, 'function', '`require.resolve` should be a function.');
 		test.strictEqual(typeof wrequire.ensure, 'function', '`require.ensure` should be a function.');
 		test.strictEqual(typeof wrequire.cache, 'object', '`require.cache` should be an object.');
-		test.strictEqual(typeof wrequire.main, 'undefined', '`require.main` should be undefined initially.');
+		test.strictEqual(typeof wrequire.main, 'object', '`require.main` should be an object, if @data-main was sepcified.');
 		test.deepEqual(Object.keys(wrequire).sort(), [ 'resolve', 'ensure', 'cache', 'main' ].sort(),
 			'`require` should have properties [ "resolve", "ensure", "cache", "main" ].');
 
