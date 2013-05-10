@@ -56,7 +56,7 @@ module.exports = {
 	},
 
 	testPresence: function(test) {
-		var window = this.window, define = window.define, require = window.require;
+		var window = this.window, define = window.define, wrequire = window.require;
 
 		test.expect(17);
 
@@ -71,31 +71,40 @@ module.exports = {
 			'`define` should have properties [ "bundle" ].');
 
 		test.throws(function() { window.require = null; }, '`require` should not be writable.');
-		test.throws(function() { require.resolve = null; }, '`require.resolve` should not be writable.');
-		test.throws(function() { require.ensure = null; }, '`require.ensure` should not be writable.');
-		test.throws(function() { require.cache = null; }, '`require.cache` should not be writable.');
-	//	test.throws(function() { require.main = null; }, '`require.main` should not be writable.'); // Main is writeable until the first require call
-		test.strictEqual(typeof require, 'function', '`require` should be a global function.');
-		test.strictEqual(typeof require.resolve, 'function', '`require.resolve` should be a function.');
-		test.strictEqual(typeof require.ensure, 'function', '`require.ensure` should be a function.');
-		test.strictEqual(typeof require.cache, 'object', '`require.cache` should be an object.');
-		test.strictEqual(typeof require.main, 'undefined', '`require.main` should be undefined initially.');
-		test.deepEqual(Object.keys(require).sort(), [ 'resolve', 'ensure', 'cache', 'main' ].sort(),
+		test.throws(function() { wrequire.resolve = null; }, '`require.resolve` should not be writable.');
+		test.throws(function() { wrequire.ensure = null; }, '`require.ensure` should not be writable.');
+		test.throws(function() { wrequire.cache = null; }, '`require.cache` should not be writable.');
+	//	test.throws(function() { wrequire.main = null; }, '`require.main` should not be writable.'); // Main is writeable until the first require call
+		test.strictEqual(typeof wrequire, 'function', '`require` should be a global function.');
+		test.strictEqual(typeof wrequire.resolve, 'function', '`require.resolve` should be a function.');
+		test.strictEqual(typeof wrequire.ensure, 'function', '`require.ensure` should be a function.');
+		test.strictEqual(typeof wrequire.cache, 'object', '`require.cache` should be an object.');
+		test.strictEqual(typeof wrequire.main, 'undefined', '`require.main` should be undefined initially.');
+		test.deepEqual(Object.keys(wrequire).sort(), [ 'resolve', 'ensure', 'cache', 'main' ].sort(),
 			'`require` should have properties [ "resolve", "ensure", "cache", "main" ].');
 
 		test.done();
 	},
 
 	testDefine: function(test) {
-		var window = this.window, define = window.define, require = window.require;
+		var window = this.window, define = window.define, wrequire = window.require;
 
 	//	test.expect();
 
-		var id = 'foo/bar', deps = [ 'baz' ], obj, factory = function() { return obj; };
-		test.throws(function() { define(foo); }, '`define` must be called with an id.');
+		var id, deps = [ 'b', 'c' ], obj, factory = function() { return obj; };
+		test.throws(function() { define(factory); }, '`define` must be called with an id.');
 
-		define(id, obj = { foo:'foo' });
-		test.strictEqual(require(id), obj, '`define` should accept an object as exports.');
+		define(id = 'id1', obj = { a:'a1' });
+		test.equal(wrequire(id).a, 'a1', '`define` should accept an object as exports.');
+
+		define(id = 'id2', factory); obj = { a:'a2' };
+		test.equal(wrequire(id).a, 'a2', '`define` should delay evaluation until required.');
+
+		define(id = 'id3', function(require, exports, module) { exports.a = 'a3'; });
+		test.equal(wrequire(id).a, 'a3', '`define` should understand `exports`.');
+
+		define(id = 'id4', function(require, exports, module) { module.exports = { a:'a4' }; });
+		test.equal(wrequire(id).a, 'a4', '`define` should understand `module.exports`.');
 
 		test.done();
 	}
