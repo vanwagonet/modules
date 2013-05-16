@@ -62,21 +62,23 @@ module.exports = {
 	testPresence: function(test) {
 		var window = this.window, define = window.define, req = window.require;
 
-		test.expect(9);
+		test.expect(11);
 
 		test.strictEqual(window.global, window, 'Global object (window) is available as `global`.');
 
 		test.strictEqual(typeof define, 'function', '`define` should be a global function.');
-		test.strictEqual(typeof define.bundle, 'function', '`define.bundle` should be a function.');
-		test.deepEqual(Object.keys(define).sort(), [ 'bundle' ].sort(),
-			'`define` should have properties [ "bundle" ].');
+		test.strictEqual(typeof define.amd, 'object', '`define.amd` should be an object.');
+		test.strictEqual(typeof define.uri, 'function', '`define.uri` should be a function.');
+		test.deepEqual(Object.keys(define).sort(), [ 'amd', 'uri' ].sort(),
+			'`define` should have properties [ "amd", "uri" ].');
 
 		test.strictEqual(typeof req, 'function', '`require` should be a global function.');
 		test.strictEqual(typeof req.resolve, 'function', '`require.resolve` should be a function.');
+		test.strictEqual(typeof req.toUrl, 'function', '`require.toUrl` should be a function.');
 		test.strictEqual(typeof req.cache, 'object', '`require.cache` should be an object.');
 		test.strictEqual(typeof req.main, 'object', '`require.main` should be an object, if @data-main was specified.');
-		test.deepEqual(Object.keys(req).sort(), [ 'resolve', 'cache', 'main' ].sort(),
-			'`require` should have properties [ "resolve", "cache", "main" ].');
+		test.deepEqual(Object.keys(req).sort(), [ 'cache', 'main', 'resolve', 'toUrl' ].sort(),
+			'`require` should have properties [ "cache", "main", "resolve", "toUrl" ].');
 
 		test.done();
 	},
