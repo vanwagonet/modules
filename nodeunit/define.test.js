@@ -33,7 +33,7 @@ function mockWindow() {
 							window.onnodeadd(node);
 						}
 					} },
-					'[data-main]':requireScript
+					'script[data-main]':requireScript
 				},
 				querySelector:function(selector) {
 					var $sels = this.$selectors;
