@@ -10,6 +10,7 @@ module.exports = function(grunt) {
 		jshint: {
 			all: [
 				'Gruntfile.js',
+				'nodeunit/**/*.test.js',
 				'lib/*.js',
 				'!lib/*.shim.js',
 				'!lib/*.min.js'

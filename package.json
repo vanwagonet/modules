@@ -14,11 +14,16 @@
 		"module",
 		"require",
 		"commonjs",
+		"amd",
 		"dependency"
 	],
 	"main": "index",
 	"engines": { "node": "*" },
+	"dependencies": {
+		"async": "~0.2"
+	},
 	"devDependencies": {
+		"jsdom": "~0.6",
 		"express": "~3.0",
 		"grunt": "~0.4.0",
 		"grunt-contrib-jshint": "*",
