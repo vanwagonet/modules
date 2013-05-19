@@ -20,21 +20,34 @@ module.exports = function(grunt) {
 			}
 		},
 
+		// Minify client scripts
+		uglify: {
+			options: {
+				report: 'gzip'
+			},
+			define: {
+				files: {
+					'lib/define.min.js': [ 'lib/define.js' ]
+				}
+			}
+		},
+
 		// Unit tests.
 		nodeunit: {
-			tests: [ 'nodeunit/**/*.test.js' ]
+			test: [ 'nodeunit/**/*.test.js' ]
 		}
 	});
 
 	// These plugins provide necessary tasks.
 	grunt.loadNpmTasks('grunt-contrib-jshint');
+	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-contrib-nodeunit');
 
 	// Whenever the "test" task is run, run some basic tests.
 	grunt.registerTask('test', [ 'nodeunit' ]);
 
 	// By default, lint and run all tests.
-	grunt.registerTask('default', [ 'jshint', 'nodeunit' ]);
+	grunt.registerTask('default', [ 'jshint', 'uglify', 'nodeunit' ]);
 
 };
 
