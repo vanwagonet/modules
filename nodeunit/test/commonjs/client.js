@@ -19,7 +19,7 @@ exports.run = function(test) {
 
 	var a, b, foo;
 
-	test.strictEqual(global, savedThis, 'global aliases this');
+	test.equal(global, savedThis, 'global aliases this');
 	test.ok('object' === typeof exports && exports === module.exports, 'exports aliases module.exports');
 	test.strictEqual(require(module.id), exports, 'require(module.id) returns exports');
 

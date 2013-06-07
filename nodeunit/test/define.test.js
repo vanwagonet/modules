@@ -119,8 +119,8 @@ module.exports = {
 		test.done();
 	},
 
-	testCommonJS: function(test) {alert('1');
-		this.window.require('test/commonjs/client', function(client) { alert('2');client.run(test); });
+	testCommonJS: function(test) {
+		this.window.require('test/commonjs/client', function(client) { client.run(test); });
 	},
 
 	testAMDJS: function(test) {
