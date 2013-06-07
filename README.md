@@ -8,15 +8,16 @@ Some of the motivation for this project can be found in [this article](http://th
 ## Client-Side Features
 
  * Modules 1.1.1 implementation for in-browser use
- * module.require function similar to nodejs implementation
- * require.ensure(id, callback) for async 
+ * `module.require` function similar to nodejs implementation
+ * `require(id, callback)` for async
+ * Map module ids to arbirary uris
 
 ## Server-Side Features
 
- * Automatically put all modules into a single js file
+ * Concat multiple modules into a single js file
  * Configure minification using your favorite compressor
- * Manage configurations in a json file
  * middleware for express
+ * Create a `uris.json` module to define bundles
 
 ## Usage
 
