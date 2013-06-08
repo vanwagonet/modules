@@ -17,7 +17,7 @@ Some of the motivation for this project can be found in [this article](http://th
  * Concat multiple modules into a single js file
  * Configure minification using your favorite compressor
  * middleware for express
- * Create a `uris.json` module to define bundles
+ * Easily create bundles
 
 ## Usage
 
@@ -46,15 +46,11 @@ app.use(modules.middleware({
 	},
 	forbid: [ // blacklist files or folders you don't want accessible.
 		'./config/',
-		'../server.js'
+		'../server.js',
+		/bad-path/i, // you can use regex
+		{ test:function(path) { return false; } } // or any object with a test function
 	]
 }));
-```
-
-PHP:
-
-```php
-<?= Modules::script('module-name', $opts) ?>
 ```
 
 Client JavaScript (using modules):
@@ -65,11 +61,26 @@ exports.a = 'a'; // export stuff
 modules.exports = function() {}; // this works too
 
 Object.keys(module); // [ 'exports', 'id', 'uri', 'loaded', 'parent', 'children' ];
-require.ensure('module/gamma', function() {
+require('module/gamma', function() {
 	// gamma and all of its deep dependencies have been loaded asynchronously
 	var gamma = require('module/gamma');
 });
 ```
+
+## Browser Support
+
+* IE 6+, Chrome, Firefox, Safari, Opera
+* IE Mobile, Chrome Mobile, Firefox Mobile, Safari Mobile, Opera Mobile
+
+Basically, if you find bugs in any browser I've heard of, I'll fix it.
+
+### Caveats
+
+IE before 8 requires you give the script tag an id of "require-script".
+All newer browsers will look for `script[data-main]` to find the
+`data-main`, `data-path`, and `data-uris` settings.
+
+`data-uris` requires `JSON` parsing, which can be polyfilled in older browsers.
 
 ## License 
 

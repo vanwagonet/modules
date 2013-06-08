@@ -5,32 +5,39 @@
 
 var browser = ('undefined' !== typeof window && this === window);
 
-function object_keys(obj) {
+function objectKeys(obj) {
 	var keys = [], k;
 	for (k in obj) { if (keys.hasOwnProperty.call(obj, k)) { keys.push(k); } }
 	return keys;
 }
 
 
-function defineJs(window, path, next) {
-	var head = window.document.getElementsByTagName('head')[0],
-		script = window.define_script;
-	if (script) { head.removeChild(script); }
-	script = window.document.createElement('script');
-	script.src = 'define.js';
-	script.setAttribute('data-main', '');
-	if (path) { script.setAttribute('data-path', path); }
-	script.onload = function() {
-		script.onload = null;
-		if (next) { next(); next = null; }
+function addScript(window, atts, next) {
+	var script = window.document.createElement('script'), a,
+		head = window.document.getElementsByTagName('head')[0],
+		prop = { src:1, id:1, defer:1, async:1 };
+	for (a in atts) {
+		if (prop[a] || /^on/.test(a)) { script[a] = atts[a]; }
+		else { script.setAttribute(a, atts[a]); }
+	}
+	script.onload = script.onerror = script.onreadystatechange = function() {
+		if ('loading' === script.readyState) { return; }
+		script.onload = script.onerror = script.onreadystatechange = null;
+		next(null, script);
 	};
-	script.onreadystatechange = function() {
-		if ('loading' !== script.readyState) {
-			script.onreadystatechange = null;
-			if (next) { next(); next = null; }
-		}
-	};
-	head.appendChild(window.define_script = script);
+	return head.appendChild(script);
+}
+
+
+function defineJs(window, atts, next) {
+	var script = window.define_script;
+	if (script) { script.parentNode.removeChild(script); }
+	atts.src = 'define.js';
+	atts.id = atts.id || 'require-script';
+	atts['data-main'] = atts['data-main'] || '';
+	addScript(window, atts, function(err, script) {
+		next(err, window.define_script = script);
+	});
 }
 
 
@@ -63,7 +70,7 @@ module.exports = {
 		var env = this;
 		mockWindow(function(err, window) {
 			if (err) { return next(err); }
-			defineJs(env.window = window, null, next);
+			defineJs(env.window = window, {}, next);
 		});
 	},
 
@@ -82,7 +89,7 @@ module.exports = {
 		test.strictEqual(typeof define, 'function', '`define` should be a global function.');
 		test.strictEqual(typeof define.amd, 'object', '`define.amd` should be an object.');
 		test.strictEqual(typeof define.uri, 'function', '`define.uri` should be a function.');
-		test.deepEqual(object_keys(define).sort(), [ 'amd', 'uri' ].sort(),
+		test.deepEqual(objectKeys(define).sort(), [ 'amd', 'uri' ].sort(),
 			'`define` should have properties [ "amd", "uri" ].');
 
 		test.strictEqual(typeof req, 'function', '`require` should be a global function.');
@@ -90,7 +97,7 @@ module.exports = {
 		test.strictEqual(typeof req.toUrl, 'function', '`require.toUrl` should be a function.');
 		test.strictEqual(typeof req.cache, 'object', '`require.cache` should be an object.');
 		test.strictEqual(typeof req.main, 'undefined', '`require.main` should be undefined, if @data-main was empty.');
-		test.deepEqual(object_keys(req).sort(), [ 'cache', 'main', 'resolve', 'toUrl' ].sort(),
+		test.deepEqual(objectKeys(req).sort(), [ 'cache', 'main', 'resolve', 'toUrl' ].sort(),
 			'`require` should have properties [ "cache", "main", "resolve", "toUrl" ].');
 
 		test.done();
@@ -131,20 +138,21 @@ module.exports = {
 			var path = prefix + tests[t++] + '/';
 			mockWindow(function(err, window) {
 				if (err) { return test.done(err); }
-				defineJs(env.window = window, path, function(err) {
+				defineJs(env.window = window, { 'data-path':path }, function(err) {
 					if (err) { return test.done(err); }
 					window.test = test;
 					window.go = function(deps, factory) {
 						window.define('_test', deps, factory);
 					};
 					window.amdJSPrint = function(msg, type) {
+						if ('done' === type) {
+							if (t < tests.length) { loop(); }
+							else { test.done(); }
+						}
 						if ('done' === type || 'info' === type) { return; }
 						test.ok('pass' === type, msg.replace(/^PASS\s|^FAIL\s/, ''));
 					};
-					window.require('_test', function(_test) {
-						if (t < tests.length) { loop(); }
-						else { test.done(); }
-					});
+					window.require('_test', function(){});
 				});
 			});
 		}());
