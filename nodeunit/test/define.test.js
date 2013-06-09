@@ -15,9 +15,9 @@ function objectKeys(obj) {
 function addScript(window, atts, next) {
 	var script = window.document.createElement('script'), a,
 		head = window.document.getElementsByTagName('head')[0],
-		prop = { src:1, id:1, defer:1, async:1 };
+		prop = { src:1, id:1, type:1, defer:1, async:1 };
 	for (a in atts) {
-		if (prop[a] || /^on/.test(a)) { script[a] = atts[a]; }
+		if (prop[a]) { script[a] = atts[a]; }
 		else { script.setAttribute(a, atts[a]); }
 	}
 	script.onload = script.onerror = script.onreadystatechange = function() {
@@ -31,7 +31,7 @@ function addScript(window, atts, next) {
 
 function defineJs(window, atts, next) {
 	var script = window.define_script;
-	if (script) { script.parentNode.removeChild(script); }
+	if (script && script.parentNode) { script.parentNode.removeChild(script); }
 	atts.src = 'define.js';
 	atts.id = atts.id || 'require-script';
 	atts['data-main'] = atts['data-main'] || '';
@@ -47,6 +47,10 @@ function(next) {
 	window.global = undefined;
 	window.define = undefined;
 	window.require = undefined;
+	var scripts = window.document.getElementsByTagName('script'), s;
+	for (s = scripts.length - 1; s >= 0; --s) {
+		scripts[s].parentNode.removeChild(scripts[s]);
+	}
 	next(null, window);
 }:
 function(next) {
@@ -109,7 +113,7 @@ module.exports = {
 		test.expect(5);
 
 		var id, deps = [ 'b', 'c' ], obj, factory = function() { return obj; };
-		test.throws(function() { define(factory); }, '`define` must be called with an id.');
+		test.throws(function() { define(factory); }, /./, '`define` must be called with an id.');
 
 		define(id = 'id1', obj = { a:'a1' });
 		test.equal(req(id).a, 'a1', '`define` should accept an object as exports.');
@@ -124,6 +128,65 @@ module.exports = {
 		test.equal(req(id).a, 'a4', '`define` should understand `module.exports`.');
 
 		test.done();
+	},
+
+	testMainAndShim: function(test) {
+		var env = this;
+		mockWindow(function(err, window) {
+			if (err) { return test.done(err); }
+			addScript(window, { src:'define.shim.js' }, function(err) {
+				window.define('test', test);
+				window.define('test/done', [ 'test' ], function(test) { return test.done; });
+				var attributes = {
+					'data-main':'test/main/client'
+				};
+				defineJs(env.window = window, attributes, function(err) {
+					if (err) { test.done(err); }
+				});
+			});
+		});
+	},
+
+	testBundlesAndShim: function(test) {
+		var env = this;
+		mockWindow(function(err, window) {
+			if (err) { return test.done(err); }
+			addScript(window, { src:'define.shim.js' }, function(err) {
+				window.define('test', test);
+				var attributes = {
+					'data-main': 'test/bundles/client',
+					'data-uris': '[' +
+						'{' +
+							'"uri":"test/bundles/absolute.bundle.js",' +
+							'"ids":["test/commonjs/absolute/a","test/commonjs/absolute/b"]' +
+						'},{' +
+							'"uri":"test/bundles/cyclic.bundle.js",' +
+							'"ids":["test/commonjs/cyclic/a","test/commonjs/cyclic/b"]' +
+						'}' +
+					']'
+				};
+				defineJs(env.window = window, attributes, function(err) {
+					if (err) { test.done(err); }
+				});
+			});
+		});
+	},
+
+	testLoading: function(test) {
+		test.expect(1);
+
+		var win = this.window;
+
+		addScript(win, { src:'test/main/a.js', defer:true, async:true }, function() {});
+		win.require('test/main/a', function() {
+			var scripts = win.document.getElementsByTagName('script'), s, count = 0;
+			for (s = scripts.length - 1; s >= 0; --s) {
+				if (/test\/main\/a\.js$/.test(scripts[s].src)) { ++count; }
+			}
+
+			test.strictEqual(count, 1, 'The script was not loaded a second time.');
+			test.done();
+		});
 	},
 
 	testCommonJS: function(test) {
