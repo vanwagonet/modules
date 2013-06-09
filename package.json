@@ -18,6 +18,7 @@
 		"dependency"
 	],
 	"main": "index",
+	"scripts": { "test" : "grunt test" },
 	"engines": { "node": "*" },
 	"dependencies": {
 		"async": "~0.2"
