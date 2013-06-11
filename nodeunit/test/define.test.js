@@ -33,7 +33,7 @@ function defineJs(window, atts, next) {
 	var script = window.define_script;
 	if (script && script.parentNode) { script.parentNode.removeChild(script); }
 	atts.src = 'define.js';
-	atts.id = atts.id || 'require-script';
+	atts.id = atts.id || 'modules-define';
 	atts['data-main'] = atts['data-main'] || '';
 	addScript(window, atts, function(err, script) {
 		next(err, window.define_script = script);
