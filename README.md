@@ -98,23 +98,41 @@ This is only useful to include first in a bundle that may be loaded before the
 
 #### In module scope (inside the factory function)
 
-* `exports` -- TODO
+See the [CommonJS Module spec](http://wiki.commonjs.org/wiki/Modules/1.1.1)
+the [AMD spec](https://github.com/amdjs/amdjs-api/wiki/AMD) and
+[Node.js modules](http://nodejs.org/api/modules.html)
 
-* `module` -- TODO
-* `module.children` -- TODO
-* `module.exports` -- TODO
-* `module.filename` -- TODO
-* `module.loaded` -- TODO
-* `module.id` -- TODO
-* `module.require()` -- TODO
-* `module.uri` -- TODO
-
-* `require(id)` -- TODO
-* `require(id, next)` -- TODO
-* `require.cache` -- TODO
-* `require.main` -- TODO
-* `require.resolve(id)` -- TODO
-* `require.toUrl(id)` -- TODO
+* `exports` -- Alias for `module.exports`. An object to assign properties to
+	in order to export values.
+* `module` -- An object representing this module.
+* `module.children` -- An array of `module` objects for the modules this one
+	requires synchronously.
+* `module.exports` -- This object will be returned from `require()` calls for
+	this module. Assign to this to export the value. Note if you assign to this
+	property, the `exports` variable is not automatically updated.
+* `module.filename` -- Alias of `uri`. The url of the script containing this
+	module.
+* `module.loaded` -- True if the module has already been defined.
+* `module.parent` -- The `module` object for the module that first required
+	this module.
+* `module.id` -- A string of slash separated terms identifying the module.
+* `module.require()` -- A `require()` function that always resolves relative
+	ids against this module's id.
+* `module.uri` -- Alias of `filename`. The url of the script containing this
+	module.
+* `require(id)` -- Returns the `exports` for the module identified. Throws an
+	error if the module has not been loaded. `id` is a module id string.
+* `require(ids, next)` -- Asynchronously load the modules, require them, and
+	pass them as arguments to the callback function `next`. `ids` may be a
+	single id string, or an array of module id strings.
+* `require.cache` -- A store of all modules the system knows about. You may
+	undefine a module by `delete require.cache[module.id]`. Assigning to
+	this property will have no effect.
+* `require.main` -- The `module` object of the module loaded by the `data-main`
+	attribute of the define script.
+* `require.resolve(id)` -- Resolves a relative module id against this module's
+	id, and returns the `uri` for that module.
+* `require.toUrl(id)` -- Similar to `require.resolve()`. See the AMD spec.
 
 
 
@@ -189,24 +207,42 @@ browser.
 		expression (`exp.test(id)`) or any object with a `test` function
 		property (`obj.test(id)`).
 
-* `modules.module(id, options?, next)` -- TODO
-* `modules.modules(ids, options? next)` -- TODO
+* `modules.module(id, options?, next)` -- Generate the client-side code for
+	the module. `id` is a module id string. `options` are the same as for
+	`modules.middleware()`. `next(err, js, modifiedDate)` will be called when
+	done. `err` is any error that may have occured, or `null` otherwise. `js`
+	is the code as a string. `modifiedDate` is the last modified time on the
+	module code file.
+* `modules.modules(ids, options?, next)` -- Exactly like `modules.module` only
+	`ids` is an array of module id strings, all of which are included in the
+	resulting js.
 
 
 #### bundles `bundles = require('modules/lib/bundles')`
 
 Provides functions for bundling modules with their deep dependencies.
 
-* `bundles.bundle(ids, exclude, options?, next)` -- TODO
-* `bundles.dependencies(ids, options?, next)` -- TODO
-* `bundles.expand(ids, assumed, options?, next)` -- TODO
+* `bundles.bundle(ids, exclude, options?, next)` -- Generate a bundle including
+	the browser code for all of the modules in the `ids` array and their deep
+	dependencies, except `exclude` and all of their deep dependencies.
+	`ids` and `exclude` are arrays of module id strings. `options` are the
+	same as `modules.middleware()`. `next` is called when complete, with the
+	same arguments as `next` in `modules.module()`.
+* `bundles.dependencies(ids, options?, next)` -- Gets a list of `ids` and all
+	of their deep dependencies. Modules need to be loaded in order to determine
+	their dependencies, so `modules.module()` is called inside this method,
+	with the `options` passed in. `next(err, ids)` is called when complete,
+	with `ids` as an array of absolute module id strings.
+* `bundles.expand(ids, exclude, options?, next)` -- Gets a list just like
+	`bundles.dependencies()`, only the ids in `exclude` and their deep
+	dependencies are omitted from the list.
 
 
 
 ## Client-Side Features
 
  * CommonJS Modules 1.1.1 implementation for in-browser use
- * `module.require` function similar to nodejs implementation
+ * `module.require` function similar to Node.js implementation
  * `require(id, callback)` for async a la require.js
  * Map module ids to arbirary uris
 
@@ -239,7 +275,7 @@ All newer browsers will look for `script[data-main]` to find the
 
 
 
-modules was written by Andy VanWagoner
+*modules* was written by Andy VanWagoner
 ([thetalecrafter](http://github.com/thetalecrafter)).
 
 Some of the motivation for this project can be found in
