@@ -28,24 +28,6 @@ module.exports = {
 		next();
 	},
 
-	testGetOptions: function(test) {
-		test.expect(4);
-
-		var opts, tmp = process.cwd();
-		process.chdir(__dirname);
-		opts = modules.getOptions({ forbid:[ './next' ] });
-		process.chdir(tmp);
-
-		test.strictEqual(opts.root, __dirname, 'Default root is the current working directory.');
-		test.strictEqual(opts.forbid[0], path.resolve(opts.root, 'next'), 'forbids are resolved from `root`.');
-		test.ok((tmp = opts.map.define) && (fs.existsSync(tmp) || fs.existsSync(tmp + '.js')),
-			'`define` is mapped to an existing file.');
-		test.ok((tmp = opts.map['define.shim']) && (fs.existsSync(tmp) || fs.existsSync(tmp + '.js')),
-			'`define.shim` is mapped to an existing file.');
-
-		test.done();
-	},
-
 
 	// tests finding all of the literal requires
 	dependencies: {
@@ -163,7 +145,7 @@ module.exports = {
 				test.strictEqual(mod.id, id, 'id should be available.');
 				test.strictEqual(mod.filename, module.filename, 'filename should be available.');
 				test.strictEqual(mod.buffer.toString('utf8'), fs.readFileSync(module.filename, 'utf8'), 'The file contents should be available.');
-				test.ok(opts.translate && opts.map, 'options should be available.');
+				test.ok(opts.translate, 'options should be available.');
 				next(null, 'return "success";');
 			}
 			async.parallel([

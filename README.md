@@ -98,8 +98,8 @@ This is only useful to include first in a bundle that may be loaded before the
 
 #### In module scope (inside the factory function)
 
-See the [CommonJS Module spec](http://wiki.commonjs.org/wiki/Modules/1.1.1)
-the [AMD spec](https://github.com/amdjs/amdjs-api/wiki/AMD) and
+See the [CommonJS Module spec](http://wiki.commonjs.org/wiki/Modules/1.1.1),
+the [AMD spec](https://github.com/amdjs/amdjs-api/wiki/AMD), and
 [Node.js modules](http://nodejs.org/api/modules.html)
 
 * `exports` -- Alias for `module.exports`. An object to assign properties to
@@ -150,10 +150,6 @@ browser.
 * `modules.middleware(options?)` -- Returns an express / connect middleware using
 	the `options` passed in.
 
-	* `root` -- Defaults to `process.cwd()`. Base path for modules in the filesystem.
-	* `path` -- Defaults to `'/module/'`. Base url path for modules in the browser.
-	* `maxAge` -- Defaults to `0`. Seconds the browser should cache the module code.
-		If set, will be put in a `Cache-Control: public, max-age=` HTTP header.
 	* `compress` -- Defaults to `false`. If a function is specified, it will be
 		passed a string of code as the first parameter, and a function as the
 		second. It expects the function to be called with either an error or
@@ -164,26 +160,6 @@ browser.
 				var UglifyJS = require('uglify-js');
 				js = UglifyJS.minify(js, { fromString:true });
 				next(null, js);
-			}
-
-	* `map` Defaults to `{}`. Map module ids to files in the filesystem.
-		`define`, `define.min`, and `define.shim` will be mapped to their
-		locations in `lib` unless explicitly mapped elsewhere. Relative paths
-		are resolved against `root`. Example:
-
-			map:{ jquery:'./vendor/jquery.min.js' }
-
-	* `translate` Defaults to `{}`. Translate specific files into CommonJS
-		modules. Object keys may be filenames, module ids, or file extensions.
-		The function values are passed the module id, the filename, and the
-		file contents as a `Buffer`. Example:
-
-			translate: {
-				html: function(id, filename, content) {
-					var _ = require('underscore');
-					content = content.toString('utf8');
-					return 'exports.template = ' + _.template(content).source;
-				}
 			}
 
 	* `forbid` Defaults to `[]`. If the file path to a module matches an entry
@@ -201,11 +177,41 @@ browser.
 				} }
 			]
 
+	* `encoding` Defaults to `'utf8'`. Encoding to read module files in.
+	* `map` Defaults to `{}`. Map module ids to files in the filesystem.
+		`define`, `define.min`, and `define.shim` will be mapped to their
+		locations in `lib` unless explicitly mapped elsewhere. Relative paths
+		are resolved against `root`. Values can also be functions Example:
+
+			map: {
+				jquery: './vendor/jquery.min.js',
+				session: function(id, options) {
+					// figure out or generate the file for this user
+					return sessionFilename;
+				}
+			}
+
+	* `maxAge` -- Defaults to `0`. Seconds the browser should cache the module code.
+		If set, will be put in a `Cache-Control: public, max-age=` HTTP header.
 	* `nowrap` Defaults to `[ 'uris.json', /\.amd\.js$/i ]`. If a module id
 		matches an entry in this list, it is not wrapped with a `define()`
 		call. Entries can be a string module id (`entry === id`), a regular
 		expression (`exp.test(id)`) or any object with a `test` function
 		property (`obj.test(id)`).
+	* `path` -- Defaults to `'/module/'`. Base url path for modules in the browser.
+	* `root` -- Defaults to `process.cwd()`. Base path for modules in the filesystem.
+	* `translate` Defaults to `{}`. Translate specific files into CommonJS
+		modules. Object keys may be filenames, module ids, or file extensions.
+		The function values are passed the module id, the filename, and the
+		file contents as a `Buffer`. Example:
+
+			translate: {
+				html: function(id, filename, content) {
+					var _ = require('underscore');
+					content = content.toString('utf8');
+					return 'exports.template = ' + _.template(content).source;
+				}
+			}
 
 * `modules.module(id, options?, next)` -- Generate the client-side code for
 	the module. `id` is a module id string. `options` are the same as for
@@ -275,9 +281,17 @@ All newer browsers will look for `script[data-main]` to find the
 
 
 
-*modules* was written by Andy VanWagoner
+## Who and Why
+
+**modules** was written by Andy VanWagoner
 ([thetalecrafter](http://github.com/thetalecrafter)).
 
 Some of the motivation for this project can be found in
 [this article](http://thetalecrafter.com/2011/09/22/commonjs-in-the-browser/).
+
+* If you like writing your modules in AMD, use
+	[require.js](http://requirejs.org).
+* If you want the browser environment to be just like Node.js, use
+	[browserify](http://browserify.org/).
+* If you want simple CommonJS in the browser, then **modules** is for you.
 
