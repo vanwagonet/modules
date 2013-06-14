@@ -202,26 +202,33 @@ browser.
 	* `root` -- Defaults to `process.cwd()`. Base path for modules in the filesystem.
 	* `translate` Defaults to `{}`. Translate specific files into CommonJS
 		modules. Object keys may be filenames, module ids, or file extensions.
-		The function values are passed the module id, the filename, and the
-		file contents as a `Buffer`. Example:
+		The functions are passed a module object, with `id`, `filename`, and
+		`content` properties. Example:
 
 			translate: {
-				html: function(id, filename, content) {
-					var _ = require('underscore');
+				html: function(module, options, next) {
+					var id = module.id, // String
+						filename = module.filename, // String
+						content = module.content, // Buffer
+						_ = require('underscore');
 					content = content.toString('utf8');
-					return 'exports.template = ' + _.template(content).source;
+					next(null, 'exports.template = ' + _.template(content).source);
 				}
 			}
 
+		If they do not match any keys in this option, modules are converted from
+		`Buffer` to string with `options.encoding`.
 * `modules.module(id, options?, next)` -- Generate the client-side code for
 	the module. `id` is a module id string. `options` are the same as for
-	`modules.middleware()`. `next(err, js, modifiedDate)` will be called when
-	done. `err` is any error that may have occured, or `null` otherwise. `js`
-	is the code as a string. `modifiedDate` is the last modified time on the
-	module code file.
+	`modules.middleware()`. `next(err, result)` will be called when
+	done. `err` is any error that may have occured, or `null` otherwise.
+	`result` is an object with properties `code`, which is the browser javascript
+	as a string, and `modified`, which is a `Date` of the last modified time on
+	the source file.
 * `modules.modules(ids, options?, next)` -- Exactly like `modules.module` only
 	`ids` is an array of module id strings, all of which are included in the
-	resulting js.
+	resulting `result.code`. The `result.modified` is the most recent modified
+	time among all of the source files loaded.
 
 
 #### bundles `bundles = require('modules/lib/bundles')`

@@ -45,11 +45,11 @@ module.exports = {
 	// tests for the module function
 	module: {
 		testNoOptions: function(test) {
-			test.expect(4);
+			test.expect(5);
 
 			var id = module.id.replace(/\.js$/i, '');
-			modules.module(id, function(err, js, mtime) {
-				var args = parseDefine(js);
+			modules.module(id, function(err, js) {
+				var args = parseDefine(js.code);
 
 				test.strictEqual(args.id, id, 'The define function should be passed the module\'s id.');
 				test.deepEqual(args.dependencies, [
@@ -64,6 +64,7 @@ module.exports = {
 				test.ok(
 					/function\s*\(\s*require\s*,\s*exports\s*,\s*module\s*\)\s*{/.test(''+args.factory),
 					'The factory should be expecting require, exports, and module parameters.');
+				test.strictEqual(+js.modified, +fs.statSync(module.filename).mtime, '`modified` should match the file\'s modified time.');
 
 				test.done();
 			});
@@ -75,14 +76,14 @@ module.exports = {
 			var id = module.id.replace(/\.js$/i, '');
 			async.parallel([
 				function(next) {
-					modules.module(id, { forbid:[ __dirname ] }, function(err, js, mtime) {
+					modules.module(id, { forbid:[ __dirname ] }, function(err, js) {
 						test.strictEqual(err && err.message, 'Forbidden', 'Forbidden module gives error.');
 						test.ok(!js, 'Forbidden module not loaded.');
 						next();
 					});
 				},
 				function(next) {
-					modules.module(id, { forbid:[ /\.test$/i ] }, function(err, js, mtime) {
+					modules.module(id, { forbid:[ /\.test$/i ] }, function(err, js) {
 						test.ok(err && !js, 'Forbid can be a regular expression.');
 						next();
 					});
@@ -91,7 +92,7 @@ module.exports = {
 					modules.module(id, { forbid:[ { test:function(tid) {
 							test.strictEqual(tid, id, 'Module id should be passed to test function.');
 							return true; // true means this is forbidden'
-						} } ] }, function(err, js, mtime) {
+						} } ] }, function(err, js) {
 						test.ok(err && !js, 'Forbid can be an object with a test function.');
 						next();
 					});
@@ -106,8 +107,8 @@ module.exports = {
 			modules.module(id, { compress:function(js, next) {
 				test.ok(/^define\(/.test(js), 'Wrapped code is passed to compress.');
 				next(null, '"use magic";');
-			} }, function(err, js, mtime) {
-				test.strictEqual(js, '"use magic";', 'Compressed string is final js.');
+			} }, function(err, js) {
+				test.strictEqual(js.code, '"use magic";', 'Compressed string is final js.');
 
 				test.done();
 			});
@@ -121,7 +122,7 @@ module.exports = {
 				function(next) {
 					modules.module(id, { map:{ 'themodul':module.filename } }, function(err, js) {
 						modules.module(module.id, function(err, js2) {
-							test.strictEqual(''+parseDefine(js).factory, ''+parseDefine(js2).factory, 'Map ids to filename strings.');
+							test.strictEqual(''+parseDefine(js.code).factory, ''+parseDefine(js2.code).factory, 'Map ids to filename strings.');
 							next();
 						});
 					});
@@ -129,7 +130,7 @@ module.exports = {
 				function(next) {
 					modules.module(id, { map:{ 'themodul':function(id) { return module.filename; } } }, function(err, js) {
 						modules.module(module.id, function(err, js2) {
-							test.strictEqual(''+parseDefine(js).factory, ''+parseDefine(js2).factory, 'Map ids to filename with a function.');
+							test.strictEqual(''+parseDefine(js.code).factory, ''+parseDefine(js2.code).factory, 'Map ids to filename with a function.');
 							next();
 						});
 					});
@@ -153,7 +154,7 @@ module.exports = {
 					var argopts = { translate:{} };
 					argopts.translate[module.filename] = trans;
 					modules.module(id, argopts, function(err, js) {
-						test.strictEqual(parseDefine(js).factory(), 'success', 'translate by filename.');
+						test.strictEqual(parseDefine(js.code).factory(), 'success', 'translate by filename.');
 						next();
 					});
 				},
@@ -161,7 +162,7 @@ module.exports = {
 					var argopts = { translate:{} };
 					argopts.translate[id] = trans;
 					modules.module(id, argopts, function(err, js) {
-						test.strictEqual(parseDefine(js).factory(), 'success', 'translate by module id.');
+						test.strictEqual(parseDefine(js.code).factory(), 'success', 'translate by module id.');
 						next();
 					});
 				},
@@ -169,7 +170,7 @@ module.exports = {
 					var argopts = { translate:{} };
 					argopts.translate.js = trans;
 					modules.module(id, argopts, function(err, js) {
-						test.strictEqual(parseDefine(js).factory(), 'success', 'translate by file extension.');
+						test.strictEqual(parseDefine(js.code).factory(), 'success', 'translate by file extension.');
 						next();
 					});
 				}
@@ -183,14 +184,14 @@ module.exports = {
 			async.parallel([
 				function(next) {
 					modules.module(id, { nowrap:[ id ] }, function(err, js) {
-						test.ok(!/^define\(/.test(js), 'No wrap by id.');
-						test.strictEqual(js, fs.readFileSync(module.filename, 'utf8'), 'The file should be unaltered.');
+						test.ok(!/^define\(/.test(js.code), 'No wrap by id.');
+						test.strictEqual(js.code, fs.readFileSync(module.filename, 'utf8'), 'The file should be unaltered.');
 						next();
 					});
 				},
 				function(next) {
-					modules.module(id, { nowrap:[ /\.test$/i ] }, function(err, js, mtime) {
-						test.ok(!/^define\(/.test(js), 'nowrap can be a regular expression.');
+					modules.module(id, { nowrap:[ /\.test$/i ] }, function(err, js) {
+						test.ok(!/^define\(/.test(js.code), 'nowrap can be a regular expression.');
 						next();
 					});
 				},
@@ -198,8 +199,8 @@ module.exports = {
 					modules.module(id, { nowrap:[ { test:function(tid) {
 							test.strictEqual(tid, id, 'Module id should be passed to test function.');
 							return true; // true means this is module should not be wrapped
-						} } ] }, function(err, js, mtime) {
-						test.ok(!/^define\(/.test(js), 'nowrap can be an object with a test function.');
+						} } ] }, function(err, js) {
+						test.ok(!/^define\(/.test(js.code), 'nowrap can be an object with a test function.');
 						next();
 					});
 				}
