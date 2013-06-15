@@ -32,11 +32,19 @@ module.exports = {
 	// tests finding all of the literal requires
 	dependencies: {
 		testRelative: function(test) {
-			test.expect();
+			test.expect(1);
+			var id = 'path1/path2/module', req = 'require',
+				js = 'var a = [ '+req+'("./dupe"), '+req+'("../path2/dupe"), '+req+'(\'../sibling\'), '+req+'(\'abs/one\') ];',
+				expect = [ './dupe', '../sibling', 'abs/one' ];
+			test.deepEqual(modules.dependencies(id, js), expect, 'Only first of duplicates after resolving is kept.');
 			test.done();
 		},
 		testAbsolute: function(test) {
-			test.expect();
+			test.expect(1);
+			var id = 'path1/path2/module', req = 'require',
+				js = 'var a = [ '+req+'("./dupe"), '+req+'("../path2/dupe"), '+req+'(\'../sibling\'), '+req+'(\'abs/one\') ];',
+				expect = [ 'path1/path2/dupe', 'path1/sibling', 'abs/one' ];
+			test.deepEqual(modules.dependencies(id, js, true), expect, 'Absolute ids can be returned.');
 			test.done();
 		}
 	},
@@ -139,7 +147,7 @@ module.exports = {
 		},
 
 		testTranslate: function(test) {
-			test.expect(15);
+			test.expect(17);
 
 			var id = module.id.replace(/\.js$/i, '');
 			function trans(mod, opts, next) {
@@ -171,6 +179,22 @@ module.exports = {
 					argopts.translate.js = trans;
 					modules.module(id, argopts, function(err, js) {
 						test.strictEqual(parseDefine(js.code).factory(), 'success', 'translate by file extension.');
+						next();
+					});
+				},
+				function(next) {
+					var id = path.resolve(__dirname, '../../package.json'), opts = { root:'/' };
+					modules.module(id, opts, function(err, js) {
+						console.error(err);
+						test.deepEqual(parseDefine(js.code).factory, require(id), '.json files are handled properly.');
+						next();
+					});
+				},
+				function(next) {
+					var id = path.resolve(__dirname, '../../LICENSE-MIT'), opts = { root:'/' };
+					modules.module(id, opts, function(err, js) {
+						console.error(err);
+						test.deepEqual(parseDefine(js.code).factory, fs.readFileSync(id, 'utf8'), 'Other files are handled properly.');
 						next();
 					});
 				}
