@@ -34,7 +34,7 @@ module.exports = {
 		testRelative: function(test) {
 			test.expect(1);
 			var id = 'path1/path2/module', req = 'require',
-				js = 'var a = [ '+req+'("./dupe"), '+req+'("../path2/dupe"), '+req+'(\'../sibling\'), '+req+'(\'abs/one\') ];',
+				js = 'var a = [ '+req+'("./dupe"), '+req+'("../path2/dupe"), '+req+'(\'../sibling\'), '+req+'(\'abs/one\') ]; // '+req+'("in/comment")\n/*\r\n'+req+'("in/comment")*/',
 				expect = [ './dupe', '../sibling', 'abs/one' ];
 			test.deepEqual(modules.dependencies(id, js), expect, 'Only first of duplicates after resolving is kept.');
 			test.done();
@@ -42,9 +42,9 @@ module.exports = {
 		testAbsolute: function(test) {
 			test.expect(1);
 			var id = 'path1/path2/module', req = 'require',
-				js = 'var a = [ '+req+'("./dupe"), '+req+'("../path2/dupe"), '+req+'(\'../sibling\'), '+req+'(\'abs/one\') ];',
+				js = 'var a = [ '+req+'("./dupe"), '+req+'("../path2/dupe"), '+req+'(\'../sibling\'), '+req+'(\'abs/one\') ]; // '+req+'("in/comment")\n/*\r\n'+req+'("in/comment")*/',
 				expect = [ 'path1/path2/dupe', 'path1/sibling', 'abs/one' ];
-			test.deepEqual(modules.dependencies(id, js, true), expect, 'Absolute ids can be returned.');
+			test.deepEqual(modules.dependencies(id, js, { absolute:true }), expect, 'Absolute ids can be returned.');
 			test.done();
 		}
 	},
@@ -113,7 +113,7 @@ module.exports = {
 
 			var id = module.id.replace(/\.js$/i, '');
 			modules.module(id, { compress:function(js, next) {
-				test.ok(/^define\(/.test(js), 'Wrapped code is passed to compress.');
+				test.ok(/^define\(/.test(js.code), 'Wrapped code is passed to compress.');
 				next(null, '"use magic";');
 			} }, function(err, js) {
 				test.strictEqual(js.code, '"use magic";', 'Compressed string is final js.');
@@ -185,7 +185,6 @@ module.exports = {
 				function(next) {
 					var id = path.resolve(__dirname, '../../package.json'), opts = { root:'/' };
 					modules.module(id, opts, function(err, js) {
-						console.error(err);
 						test.deepEqual(parseDefine(js.code).factory, require(id), '.json files are handled properly.');
 						next();
 					});
@@ -193,7 +192,6 @@ module.exports = {
 				function(next) {
 					var id = path.resolve(__dirname, '../../LICENSE-MIT'), opts = { root:'/' };
 					modules.module(id, opts, function(err, js) {
-						console.error(err);
 						test.deepEqual(parseDefine(js.code).factory, fs.readFileSync(id, 'utf8'), 'Other files are handled properly.');
 						next();
 					});
@@ -235,16 +233,99 @@ module.exports = {
 
 	modules: {
 		testModules: function(test) {
-			test.expect();
-			test.done();
+			test.expect(4);
+
+			var count = 0,
+				expected =
+					'define("a",function(require,exports,module){exports.a = \'a\';\n\n});\n' +
+					'define("b",function(require,exports,module){exports.b = \'b\';\n\n});\n' +
+					'define("c",function(require,exports,module){exports.c = \'c\';\n\n});\n';
+			modules.modules([ 'a', 'b', 'c' ], {
+				root:path.resolve(__dirname, 'modules.modules'),
+				compress:function(js, next) {
+					++count;
+					test.strictEqual(js.code, expected, 'Compress is called on final js.');
+					next(null, js.code);
+				}
+			}, function(err, js) {
+				test.strictEqual(js.code, expected, 'Modules are included in order specified.');
+				test.ok((js.modified instanceof Date) && +js.modified, '`.modified` is last modified date.');
+				test.strictEqual(count, 1, 'Compress is only called once.');
+				test.done();
+			});
 		}
 	},
 
 
 	middleware: {
 		testMiddleware: function(test) {
-			test.expect();
-			test.done();
+			test.expect(6);
+
+			var	options = {
+					root: path.resolve(__dirname, 'modules.modules'),
+					path: '/script/',
+					maxAge: 1234
+				},
+				middleware = modules.middleware(options);
+			async.parallel([
+				function(next) {
+					middleware({
+						// mock request
+						path:'/'
+					}, {
+						// mock response
+						set: function(header, value) {
+							test.fail('Should not set a header.');
+						},
+						send: function(content) {
+							test.fail('Should not send content.');
+						}
+					}, function(err) {
+						test.ok(!err, 'Pass through non-matching requests with no error.');
+						next();
+					});
+				},
+				function(next) {
+					middleware({
+						// mock request
+						path:'/script/a.js'
+					}, {
+						// mock response
+						set: function(header, value) {
+							if ('Content-Type' === header) {
+								test.strictEqual(value, 'application/javascript', 'Send proper MIME.');
+							} else if ('Last-Modified' === header) {
+								test.ok(+new Date(value), 'Send last-modified date.');
+							} else if ('Cache-Control' === header) {
+								test.strictEqual(value, 'public, max-age=1234', 'Send proper Cache header.');
+							}
+						},
+						send: function(content) {
+							test.strictEqual(content, 'define("a",function(require,exports,module){exports.a = \'a\';\n\n});\n', 'Send proper content.');
+							next();
+						}
+					}, function(err) {
+						test.fail('Dont call next on handled requests.');
+					});
+				},
+				function(next) {
+					middleware({
+						// mock request
+						path:'/script/bogus.js'
+					}, {
+						// mock response
+						set: function(header, value) {
+							test.fail('Should not set a header.');
+						},
+						send: function(content) {
+							test.fail('Should not send content.');
+						}
+					}, function(err) {
+						test.ok(!err, 'Pass through 404 requests with no error.');
+						next();
+					});
+				}
+			], test.done);
 		}
 	}
 };

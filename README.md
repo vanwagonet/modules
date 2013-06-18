@@ -96,7 +96,9 @@ This is only useful to include first in a bundle that may be loaded before the
 * `define.amd` -- Object denoting AMD compatibility.
 
 
-#### In module scope (inside the factory function)
+#### module scope
+
+(inside the factory function)
 
 See the [CommonJS Module spec](http://wiki.commonjs.org/wiki/Modules/1.1.1),
 the [AMD spec](https://github.com/amdjs/amdjs-api/wiki/AMD), and
@@ -138,27 +140,32 @@ the [AMD spec](https://github.com/amdjs/amdjs-api/wiki/AMD), and
 
 ### In Node.js
 
-#### modules `modules = require('modules')`
+#### modules
+
+	modules = require('modules')
 
 Provides middleware and functions to wrap and bundle your modules for use in the
 browser.
 
-* `modules.dependencies(id, js, absolute?)` -- Finds all literal `require()` calls
-	in a module identified by `id`. `js` is the code for the module as a string. If
-	`absolute` is true, the returned dependency ids are made absolute, otherwise they
-	are returned as written in the code. Returns an array of module id strings.
+* `modules.dependencies(id, js, options?)` -- Finds all literal synchronous
+	`require()` calls in a module identified by `id`. `js` is the code for the
+	module as a string. If `options.absolute` is true, the returned dependency ids
+	are made absolute, otherwise they are returned as written in the code. Returns
+	an array of module id strings. *Note: this uses regular expressions instead
+	of a parser. Comments are excluded. The function will miss any calls with a
+	renamed require, or a variable instead of a string literal id.*
 * `modules.middleware(options?)` -- Returns an express / connect middleware using
 	the `options` passed in.
 
 	* `compress` -- Defaults to `false`. If a function is specified, it will be
-		passed a string of code as the first parameter, and a function as the
-		second. It expects the function to be called with either an error or
-		null in the first argument, and the compressed code as a string in the
-		second. Example:
+		passed a module object with `id`, `filename`, `code`, and `modified`
+		properties as the first parameter, and a function as the second. It expects
+		the function to be called with either an error or null in the first argument,
+		and the compressed code as a string in the second. Example:
 
 			compress:function(js, next) {
 				var UglifyJS = require('uglify-js');
-				js = UglifyJS.minify(js, { fromString:true });
+				js = UglifyJS.minify(js.code, { fromString:true });
 				next(null, js);
 			}
 
@@ -231,7 +238,9 @@ browser.
 	time among all of the source files loaded.
 
 
-#### bundles `bundles = require('modules/lib/bundles')`
+#### bundles
+
+	bundles = require('modules/lib/bundles')
 
 Provides functions for bundling modules with their deep dependencies.
 
@@ -276,7 +285,7 @@ Provides functions for bundling modules with their deep dependencies.
 * IE 6+, Chrome, Firefox, Safari, Opera
 * IE Mobile, Chrome Mobile, Firefox Mobile, Safari Mobile, Opera Mobile
 
-Basically, if you find bugs in any browser I've heard of, I'll fix it.
+Basically, bugs reported in any common browser will get fixed.
 
 ### Caveats
 
