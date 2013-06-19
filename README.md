@@ -1,4 +1,4 @@
-# modules [![Build Status](https://secure.travis-ci.org/thetalecrafter/modules.png?branch=rewrite)](http://travis-ci.org/thetalecrafter/modules)
+# modules [![Build Status](https://secure.travis-ci.org/thetalecrafter/modules.png?branch=master)](http://travis-ci.org/thetalecrafter/modules)
 
 > Use CommonJS modules client-side in web applications
 
