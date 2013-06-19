@@ -241,7 +241,7 @@ module.exports = {
 					'define("b",function(require,exports,module){exports.b = \'b\';\n\n});\n' +
 					'define("c",function(require,exports,module){exports.c = \'c\';\n\n});\n';
 			modules.modules([ 'a', 'b', 'c' ], {
-				root:path.resolve(__dirname, 'modules.modules'),
+				root:path.resolve(__dirname, 'modules'),
 				compress:function(js, next) {
 					++count;
 					test.strictEqual(js.code, expected, 'Compress is called on final js.');
@@ -262,7 +262,7 @@ module.exports = {
 			test.expect(6);
 
 			var	options = {
-					root: path.resolve(__dirname, 'modules.modules'),
+					root: path.resolve(__dirname, 'modules'),
 					path: '/script/',
 					maxAge: 1234
 				},
