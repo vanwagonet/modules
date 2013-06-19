@@ -31,99 +31,365 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
-        <h1>modules</h1>
+        <h1>
+<a name="modules" class="anchor" href="#modules"><span class="octicon octicon-link"></span></a>modules</h1>
 
-<p>CommonJS modules implementation for web applications written by Andy VanWagoner
+<blockquote>
+<p>Use CommonJS modules client-side in web applications</p>
+</blockquote>
+
+<h2>
+<a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting started</h2>
+
+<p>Install via npm</p>
+
+<pre><code>npm install modules --save-dev
+</code></pre>
+
+<p>Add the middleware to your express or connect app</p>
+
+<pre><code>app.get('/module/*', require('modules').middleware({
+    root: './component', // where modules live in the filesystem
+    path: '/module/' // the base path for modules in the browser
+    // ... other options
+});
+</code></pre>
+
+<p>Add the client script to your html</p>
+
+<pre><code>&lt;script src="/module/define.min.js" data-main="my-main-module"&gt;&lt;/script&gt;
+</code></pre>
+
+<h3>
+<a name="mapping-and-bundling" class="anchor" href="#mapping-and-bundling"><span class="octicon octicon-link"></span></a>Mapping and Bundling</h3>
+
+<p>You can create bundles (files containing multiple modules), and/or map modules to
+urls outside of the conventional location.</p>
+
+<p>Client-side, this mapping is handled with the <code>data-uris</code> attribute on the script
+tag, or with a call to <code>define.uri()</code>. <code>define.uri()</code> takes a map object as its only
+parameter, and the <code>data-uris</code> attribute expects a JSON array of map objects.</p>
+
+<p>Map objects are of the form:</p>
+
+<pre><code>{ "uri":"url/of/bundle.js", "ids":[ "module1", "my/module/2" ] }
+</code></pre>
+
+<p>Server-side and at build time you can generate bundles with the following snippets:</p>
+
+<pre><code>// Generate a bundle with a specific set of modules included
+require('modules').modules(
+    [ 'module1', 'module2' ],
+    { /* options */ }, // specify optional compression, etc.
+    function(err, js, modified) {
+        // js is a string containing the AMD-wrapped javascript for the modules
+        // modified is the most recent modified date among the included modules
+    }
+);
+
+// Generate a bundle with all of the deep dependencies of the modules, excluding
+//  the deep dependencies of another list of modules
+require('modules/lib/bundles').bundle(
+    [ 'module1', 'module2' ], // include these and their deep dependencies
+    [ 'module3', 'module4' ], // except any of these or their deep dependencies
+    { /* options */ },
+    function(err, js, modified) {
+    }
+);
+</code></pre>
+
+<h2>
+<a name="api" class="anchor" href="#api"><span class="octicon octicon-link"></span></a>API</h2>
+
+<h3>
+<a name="in-browser" class="anchor" href="#in-browser"><span class="octicon octicon-link"></span></a>In Browser</h3>
+
+<h4>
+<a name="definejs-or-defineminjs" class="anchor" href="#definejs-or-defineminjs"><span class="octicon octicon-link"></span></a>define.js or define.min.js</h4>
+
+<p>These scripts create the <code>define</code> function used to create a module environment
+in the browser. You can reference the file how ever you'd like; they are in the
+<code>lib</code> folder in the source code. However, the preferred way is to include a
+script tag pointing to the path the middleware is listening to:</p>
+
+<pre><code>&lt;script src="/path/to/middleware/define.min.js"&gt;&lt;/script&gt;
+</code></pre>
+
+<ul>
+<li>
+<code>define(id, dependencies?, factory)</code> -- Define module <code>id</code>. <code>id</code> is required
+in this implementation. If the <code>dependencies</code> parameter is omitted, the factory
+will not be scanned for <code>require()</code> calls, <code>[ 'require', 'exports', 'module' ]</code>
+will be used instead.
+See the <a href="https://github.com/amdjs/amdjs-api/wiki/AMD">AMD wiki</a> for details.</li>
+<li>
+<code>define.amd</code> -- Object denoting AMD compatibility.</li>
+<li>
+<code>define.uri(uriMap)</code> -- Tell define what file to load for specific modules.
+<code>uriMap</code> objects look like <code>{ "uri":"url/of/bundle.js", "ids":[ "moduleid" ] }</code>.</li>
+</ul><h4>
+<a name="defineshimjs" class="anchor" href="#defineshimjs"><span class="octicon octicon-link"></span></a>define.shim.js</h4>
+
+<p>This is only useful to include first in a bundle that may be loaded before the
+<code>define</code> or <code>define.min</code> script has run. Usually the main bundle includes
+<code>define.min</code> and the shim is not needed.</p>
+
+<ul>
+<li>
+<code>define(id, dependencies?, factory)</code> -- Saves the arguments for when <code>define</code>
+or <code>define.min</code> is loaded.</li>
+<li>
+<code>define.amd</code> -- Object denoting AMD compatibility.</li>
+</ul><h4>
+<a name="module-scope" class="anchor" href="#module-scope"><span class="octicon octicon-link"></span></a>module scope</h4>
+
+<p>(inside the factory function)</p>
+
+<p>See the <a href="http://wiki.commonjs.org/wiki/Modules/1.1.1">CommonJS Module spec</a>,
+the <a href="https://github.com/amdjs/amdjs-api/wiki/AMD">AMD spec</a>, and
+<a href="http://nodejs.org/api/modules.html">Node.js modules</a></p>
+
+<ul>
+<li>
+<code>exports</code> -- Alias for <code>module.exports</code>. An object to assign properties to
+in order to export values.</li>
+<li>
+<code>module</code> -- An object representing this module.</li>
+<li>
+<code>module.children</code> -- An array of <code>module</code> objects for the modules this one
+requires synchronously.</li>
+<li>
+<code>module.exports</code> -- This object will be returned from <code>require()</code> calls for
+this module. Assign to this to export the value. Note if you assign to this
+property, the <code>exports</code> variable is not automatically updated.</li>
+<li>
+<code>module.filename</code> -- Alias of <code>uri</code>. The url of the script containing this
+module.</li>
+<li>
+<code>module.loaded</code> -- True if the module has already been defined.</li>
+<li>
+<code>module.parent</code> -- The <code>module</code> object for the module that first required
+this module.</li>
+<li>
+<code>module.id</code> -- A string of slash separated terms identifying the module.</li>
+<li>
+<code>module.require()</code> -- A <code>require()</code> function that always resolves relative
+ids against this module's id.</li>
+<li>
+<code>module.uri</code> -- Alias of <code>filename</code>. The url of the script containing this
+module.</li>
+<li>
+<code>require(id)</code> -- Returns the <code>exports</code> for the module identified. Throws an
+error if the module has not been loaded. <code>id</code> is a module id string.</li>
+<li>
+<code>require(ids, next)</code> -- Asynchronously load the modules, require them, and
+pass them as arguments to the callback function <code>next</code>. <code>ids</code> may be a
+single id string, or an array of module id strings.</li>
+<li>
+<code>require.cache</code> -- A store of all modules the system knows about. You may
+undefine a module by <code>delete require.cache[module.id]</code>. Assigning to
+this property will have no effect.</li>
+<li>
+<code>require.main</code> -- The <code>module</code> object of the module loaded by the <code>data-main</code>
+attribute of the define script.</li>
+<li>
+<code>require.resolve(id)</code> -- Resolves a relative module id against this module's
+id, and returns the <code>uri</code> for that module.</li>
+<li>
+<code>require.toUrl(id)</code> -- Similar to <code>require.resolve()</code>. See the AMD spec.</li>
+</ul><h3>
+<a name="in-nodejs" class="anchor" href="#in-nodejs"><span class="octicon octicon-link"></span></a>In Node.js</h3>
+
+<h4>
+<a name="modules-1" class="anchor" href="#modules-1"><span class="octicon octicon-link"></span></a>modules</h4>
+
+<pre><code>modules = require('modules')
+</code></pre>
+
+<p>Provides middleware and functions to wrap and bundle your modules for use in the
+browser.</p>
+
+<ul>
+<li>
+<code>modules.dependencies(id, js, options?)</code> -- Finds all literal synchronous
+<code>require()</code> calls in a module identified by <code>id</code>. <code>js</code> is the code for the
+module as a string. If <code>options.absolute</code> is true, the returned dependency ids
+are made absolute, otherwise they are returned as written in the code. Returns
+an array of module id strings. <em>Note: this uses regular expressions instead
+of a parser. Comments are excluded. The function will miss any calls with a
+renamed require, or a variable instead of a string literal id.</em>
+</li>
+<li>
+<p><code>modules.middleware(options?)</code> -- Returns an express / connect middleware using
+the <code>options</code> passed in.</p>
+
+<ul>
+<li>
+<p><code>compress</code> -- Defaults to <code>false</code>. If a function is specified, it will be
+passed a module object with <code>id</code>, <code>filename</code>, <code>code</code>, and <code>modified</code>
+properties as the first parameter, and a function as the second. It expects
+the function to be called with either an error or null in the first argument,
+and the compressed code as a string in the second. Example:</p>
+
+<pre><code>compress:function(js, next) {
+    var UglifyJS = require('uglify-js');
+    js = UglifyJS.minify(js.code, { fromString:true });
+    next(null, js);
+}
+</code></pre>
+</li>
+<li>
+<p><code>forbid</code> Defaults to <code>[]</code>. If the file path to a module matches an entry
+in this list, a <code>'Forbidden'</code> error will be passed to the next error
+middleware. Entries can be a string module id (filename starts with
+entry), a regular expression (<code>exp.test(filename)</code>) or any object with
+a <code>test</code> function property (<code>obj.test(filename)</code>). Files outside of the
+<code>root</code> directory are always forbidden, unless they have been mapped.
+Mapped files are always allowed. Example:</p>
+
+<pre><code>forbid: [
+    'server', /\.middleware\.js$/,
+    { test:function(filename) {
+        return filename.slice(-3) === 'foo';
+    } }
+]
+</code></pre>
+</li>
+<li><p><code>encoding</code> Defaults to <code>'utf8'</code>. Encoding to read module files in.</p></li>
+<li>
+<p><code>map</code> Defaults to <code>{}</code>. Map module ids to files in the filesystem.
+<code>define</code>, <code>define.min</code>, and <code>define.shim</code> will be mapped to their
+locations in <code>lib</code> unless explicitly mapped elsewhere. Relative paths
+are resolved against <code>root</code>. Values can also be functions Example:</p>
+
+<pre><code>map: {
+    jquery: './vendor/jquery.min.js',
+    session: function(id, options) {
+        // figure out or generate the file for this user
+        return sessionFilename;
+    }
+}
+</code></pre>
+</li>
+<li><p><code>maxAge</code> -- Defaults to <code>0</code>. Seconds the browser should cache the module code.
+If set, will be put in a <code>Cache-Control: public, max-age=</code> HTTP header.</p></li>
+<li><p><code>nowrap</code> Defaults to <code>[ 'uris.json', /\.amd\.js$/i ]</code>. If a module id
+matches an entry in this list, it is not wrapped with a <code>define()</code>
+call. Entries can be a string module id (<code>entry === id</code>), a regular
+expression (<code>exp.test(id)</code>) or any object with a <code>test</code> function
+property (<code>obj.test(id)</code>).</p></li>
+<li><p><code>path</code> -- Defaults to <code>'/module/'</code>. Base url path for modules in the browser.</p></li>
+<li><p><code>root</code> -- Defaults to <code>process.cwd()</code>. Base path for modules in the filesystem.</p></li>
+<li>
+<p><code>translate</code> Defaults to <code>{}</code>. Translate specific files into CommonJS
+modules. Object keys may be filenames, module ids, or file extensions.
+The functions are passed a module object, with <code>id</code>, <code>filename</code>, and
+<code>content</code> properties. Example:</p>
+
+<pre><code>translate: {
+    html: function(module, options, next) {
+        var id = module.id, // String
+            filename = module.filename, // String
+            content = module.content, // Buffer
+            _ = require('underscore');
+        content = content.toString('utf8');
+        next(null, 'exports.template = ' + _.template(content).source);
+    }
+}
+</code></pre>
+
+<p>If they do not match any keys in this option, modules are converted from
+<code>Buffer</code> to string with <code>options.encoding</code>.</p>
+</li>
+</ul>
+</li>
+<li><p><code>modules.module(id, options?, next)</code> -- Generate the client-side code for
+the module. <code>id</code> is a module id string. <code>options</code> are the same as for
+<code>modules.middleware()</code>. <code>next(err, result)</code> will be called when
+done. <code>err</code> is any error that may have occured, or <code>null</code> otherwise.
+<code>result</code> is an object with properties <code>code</code>, which is the browser javascript
+as a string, and <code>modified</code>, which is a <code>Date</code> of the last modified time on
+the source file.</p></li>
+<li><p><code>modules.modules(ids, options?, next)</code> -- Exactly like <code>modules.module</code> only
+<code>ids</code> is an array of module id strings, all of which are included in the
+resulting <code>result.code</code>. The <code>result.modified</code> is the most recent modified
+time among all of the source files loaded.</p></li>
+</ul><h4>
+<a name="bundles" class="anchor" href="#bundles"><span class="octicon octicon-link"></span></a>bundles</h4>
+
+<pre><code>bundles = require('modules/lib/bundles')
+</code></pre>
+
+<p>Provides functions for bundling modules with their deep dependencies.</p>
+
+<ul>
+<li>
+<code>bundles.bundle(ids, exclude, options?, next)</code> -- Generate a bundle including
+the browser code for all of the modules in the <code>ids</code> array and their deep
+dependencies, except <code>exclude</code> and all of their deep dependencies.
+<code>ids</code> and <code>exclude</code> are arrays of module id strings. <code>options</code> are the
+same as <code>modules.middleware()</code>. <code>next</code> is called when complete, with the
+same arguments as <code>next</code> in <code>modules.module()</code>.</li>
+<li>
+<code>bundles.dependencies(ids, options?, next)</code> -- Gets a list of <code>ids</code> and all
+of their deep dependencies. Modules need to be loaded in order to determine
+their dependencies, so <code>modules.module()</code> is called inside this method,
+with the <code>options</code> passed in. <code>next(err, ids)</code> is called when complete,
+with <code>ids</code> as an array of absolute module id strings.</li>
+<li>
+<code>bundles.expand(ids, exclude, options?, next)</code> -- Gets a list just like
+<code>bundles.dependencies()</code>, only the ids in <code>exclude</code> and their deep
+dependencies are omitted from the list.</li>
+</ul><h2>
+<a name="client-side-features" class="anchor" href="#client-side-features"><span class="octicon octicon-link"></span></a>Client-Side Features</h2>
+
+<ul>
+<li>CommonJS Modules 1.1.1 implementation for in-browser use</li>
+<li>
+<code>module.require</code> function similar to Node.js implementation</li>
+<li>
+<code>require(id, callback)</code> for async a la require.js</li>
+<li>Map module ids to arbirary uris</li>
+</ul><h2>
+<a name="server-side-features" class="anchor" href="#server-side-features"><span class="octicon octicon-link"></span></a>Server-Side Features</h2>
+
+<ul>
+<li>Middleware for express / connect</li>
+<li>Create bundles of all the deep dependencies of a list of modules</li>
+<li>Configure minification using your favorite compressor</li>
+</ul><h2>
+<a name="browser-support" class="anchor" href="#browser-support"><span class="octicon octicon-link"></span></a>Browser Support</h2>
+
+<ul>
+<li>IE 6+, Chrome, Firefox, Safari, Opera</li>
+<li>IE Mobile, Chrome Mobile, Firefox Mobile, Safari Mobile, Opera Mobile</li>
+</ul><p>Basically, bugs reported in any common browser will get fixed.</p>
+
+<h3>
+<a name="caveats" class="anchor" href="#caveats"><span class="octicon octicon-link"></span></a>Caveats</h3>
+
+<p>IE before 8 requires you give the client script tag an id of "modules-define".
+All newer browsers will look for <code>script[data-main]</code> to find the
+<code>data-main</code>, <code>data-path</code>, and <code>data-uris</code> attribute settings.</p>
+
+<p><code>data-uris</code> requires <code>JSON.parse</code>, which can be polyfilled in older browsers.</p>
+
+<h2>
+<a name="who-and-why" class="anchor" href="#who-and-why"><span class="octicon octicon-link"></span></a>Who and Why</h2>
+
+<p><strong>modules</strong> was written by Andy VanWagoner
 (<a href="http://github.com/thetalecrafter">thetalecrafter</a>).</p>
 
-<p>Some of the motivation for this project can be found in <a href="http://thetalecrafter.wordpress.com/2011/09/22/commonjs-in-the-browser/">this article</a>.</p>
-
-<h2>Client-Side Features</h2>
-
-<ul>
-<li>Modules 1.1.1 implementation for in-browser use</li>
-<li>module.require function similar to nodejs implementation</li>
-<li>require.ensure(id, callback) for async </li>
-</ul><h2>Server-Side Features</h2>
+<p>Some of the motivation for this project can be found in
+<a href="http://thetalecrafter.com/2011/09/22/commonjs-in-the-browser/">this article</a>.</p>
 
 <ul>
-<li>Automatically put all modules into a single js file</li>
-<li>Configure minification using your favorite compressor</li>
-<li>Manage configurations in a json file</li>
-<li>middleware for express</li>
-</ul><h2>Usage</h2>
-
-<p>Server JavaScript (Node.js + express)</p>
-
-<p>Install modules from npm: <code>npm install modules</code></p>
-
-<div class="highlight"><pre><span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="nx">express</span><span class="p">(),</span> <span class="nx">modules</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'modules'</span><span class="p">);</span>
-<span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">modules</span><span class="p">.</span><span class="nx">middleware</span><span class="p">({</span>
-    <span class="c1">// all of the options are optional</span>
-    <span class="nx">root</span><span class="o">:</span> <span class="nx">__dirname</span><span class="p">,</span> <span class="c1">// server side root directory for modules</span>
-    <span class="nx">path</span><span class="o">:</span> <span class="s1">'/module/'</span><span class="p">,</span> <span class="c1">// url path for modules</span>
-    <span class="nx">maxAge</span><span class="o">:</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span> <span class="c1">// Cache-Control max-age for modules</span>
-    <span class="nx">compress</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">str</span><span class="p">,</span> <span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">// do compression using uglify, or your prefered compressor</span>
-        <span class="nx">done</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">compressed</span><span class="p">);</span> <span class="c1">// when done or if there is an error</span>
-    <span class="p">},</span>
-    <span class="nx">map</span><span class="o">:</span> <span class="p">{</span> <span class="nx">jquery</span><span class="o">:</span><span class="s1">'./lib/jquery-wrapped.min.js'</span> <span class="p">},</span> <span class="c1">// map pretty names to filenames</span>
-    <span class="nx">translate</span><span class="o">:</span> <span class="p">{</span>
-        <span class="nx">html</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">filename</span><span class="p">,</span> <span class="nx">content</span><span class="p">)</span> <span class="p">{</span>
-            <span class="c1">// convert html templates to js functions, or do whatever</span>
-            <span class="c1">//  you want to convert file types to commonjs modules</span>
-            <span class="k">return</span> <span class="s1">'exports.template = '</span> <span class="o">+</span> <span class="nx">_</span><span class="p">.</span><span class="nx">template</span><span class="p">(</span><span class="nx">content</span><span class="p">).</span><span class="nx">source</span><span class="p">;</span>
-        <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="nx">forbid</span><span class="o">:</span> <span class="p">[</span> <span class="c1">// blacklist files or folders you don't want accessible.</span>
-        <span class="s1">'./config/'</span><span class="p">,</span>
-        <span class="s1">'../server.js'</span>
-    <span class="p">]</span>
-<span class="p">}));</span>
-</pre></div>
-
-<p>PHP:</p>
-
-<div class="highlight"><pre><span class="o">&lt;?=</span> <span class="nx">Modules</span><span class="o">::</span><span class="na">script</span><span class="p">(</span><span class="s1">'module-name'</span><span class="p">,</span> <span class="nv">$opts</span><span class="p">)</span> <span class="cp">?&gt;</span><span class="x"></span>
-</pre></div>
-
-<p>Client JavaScript (using modules):</p>
-
-<div class="highlight"><pre><span class="kd">var</span> <span class="nx">mod</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'some/module'</span><span class="p">);</span> <span class="c1">// returns exports of that module</span>
-<span class="nx">exports</span><span class="p">.</span><span class="nx">a</span> <span class="o">=</span> <span class="s1">'a'</span><span class="p">;</span> <span class="c1">// export stuff</span>
-<span class="nx">modules</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{};</span> <span class="c1">// this works too</span>
-
-<span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">module</span><span class="p">);</span> <span class="c1">// [ 'exports', 'id', 'uri', 'loaded', 'parent', 'children' ];</span>
-<span class="nx">require</span><span class="p">.</span><span class="nx">ensure</span><span class="p">(</span><span class="s1">'module/gamma'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="c1">// gamma and all of its deep dependencies have been loaded asynchronously</span>
-    <span class="kd">var</span> <span class="nx">gamma</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'module/gamma'</span><span class="p">);</span>
-<span class="p">});</span>
-</pre></div>
-
-<h2>License</h2>
-
-<p>(The MIT License)</p>
-
-<p>Copyright (c) 2012 Andy VanWagoner</p>
-
-<p>Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-'Software'), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:</p>
-
-<p>The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.</p>
-
-<p>THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+<li>If you like writing your modules in AMD, use
+<a href="http://requirejs.org">require.js</a>.</li>
+<li>If you want the browser environment to be just like Node.js, use
+<a href="http://browserify.org/">browserify</a>.</li>
+<li>If you want simple CommonJS in the browser, then <strong>modules</strong> is for you.</li>
+</ul>
       </section>
     </div>
 
