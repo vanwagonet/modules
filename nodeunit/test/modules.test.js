@@ -66,7 +66,7 @@ module.exports = {
 					'path', 'fs', 'async'
 				], 'The define function should be passed the dependencies.');
 				test.strictEqual(
-					(''+args.factory).replace(/^\s*function\s\([^\)]*?\)\s*\{\s*|\s*}\s*$/g, ''),
+					(''+args.factory).replace(/^\s*function\s\([^\)]*?\)\s*\{(var define;)?\s*|\s*}\s*$/g, ''),
 					fs.readFileSync(module.filename, 'utf8').trim(),
 					'The define factory content should match the file content.');
 				test.ok(
