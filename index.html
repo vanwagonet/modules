@@ -1,38 +1,39 @@
 <!DOCTYPE html>
 <html>
-
   <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="Modules : CommonJS module framework for use in web applications" />
-
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
-
-    <title>Modules</title>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <title>Modules by thetalecrafter</title>
   </head>
 
   <body>
+    <div id="container">
+      <div class="inner">
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/thetalecrafter/modules">View on GitHub</a>
-
-          <h1 id="project_title">Modules</h1>
-          <h2 id="project_tagline">CommonJS module framework for use in web applications</h2>
-
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/thetalecrafter/modules/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/thetalecrafter/modules/tarball/master">Download this project as a tar.gz file</a>
-            </section>
+        <header>
+          <h1>Modules</h1>
+          <h2>CommonJS module framework for use in web applications</h2>
         </header>
-    </div>
 
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <h1>
-<a name="modules" class="anchor" href="#modules"><span class="octicon octicon-link"></span></a>modules</h1>
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/thetalecrafter/modules/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+          <a href="https://github.com/thetalecrafter/modules/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+          <a href="https://github.com/thetalecrafter/modules" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
+
+        <hr>
+
+        <section id="main_content">
+          <h1>
+<a name="modules-" class="anchor" href="#modules-"><span class="octicon octicon-link"></span></a>modules <a href="http://travis-ci.org/thetalecrafter/modules"><img src="https://secure.travis-ci.org/thetalecrafter/modules.png?branch=master" alt="Build Status"></a>
+</h1>
 
 <blockquote>
 <p>Use CommonJS modules client-side in web applications</p>
@@ -201,7 +202,7 @@ id, and returns the <code>uri</code> for that module.</li>
 <a name="in-nodejs" class="anchor" href="#in-nodejs"><span class="octicon octicon-link"></span></a>In Node.js</h3>
 
 <h4>
-<a name="modules-1" class="anchor" href="#modules-1"><span class="octicon octicon-link"></span></a>modules</h4>
+<a name="modules" class="anchor" href="#modules"><span class="octicon octicon-link"></span></a>modules</h4>
 
 <pre><code>modules = require('modules')
 </code></pre>
@@ -284,13 +285,13 @@ property (<code>obj.test(id)</code>).</p></li>
 <p><code>translate</code> Defaults to <code>{}</code>. Translate specific files into CommonJS
 modules. Object keys may be filenames, module ids, or file extensions.
 The functions are passed a module object, with <code>id</code>, <code>filename</code>, and
-<code>content</code> properties. Example:</p>
+<code>buffer</code> properties. Example:</p>
 
 <pre><code>translate: {
     html: function(module, options, next) {
         var id = module.id, // String
             filename = module.filename, // String
-            content = module.content, // Buffer
+            content = module.buffer, // Buffer
             _ = require('underscore');
         content = content.toString('utf8');
         next(null, 'exports.template = ' + _.template(content).source);
@@ -368,7 +369,7 @@ dependencies are omitted from the list.</li>
 <h3>
 <a name="caveats" class="anchor" href="#caveats"><span class="octicon octicon-link"></span></a>Caveats</h3>
 
-<p>IE before 8 requires you give the client script tag an id of "modules-define".
+<p>IE before 8 requires you give the client script tag an id of <code>"modules-define"</code>.
 All newer browsers will look for <code>script[data-main]</code> to find the
 <code>data-main</code>, <code>data-path</code>, and <code>data-uris</code> attribute settings.</p>
 
@@ -390,18 +391,15 @@ All newer browsers will look for <code>script[data-main]</code> to find the
 <a href="http://browserify.org/">browserify</a>.</li>
 <li>If you want simple CommonJS in the browser, then <strong>modules</strong> is for you.</li>
 </ul>
-      </section>
+        </section>
+
+        <footer>
+          Modules is maintained by <a href="https://github.com/thetalecrafter">thetalecrafter</a><br>
+          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
+
+        
+      </div>
     </div>
-
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">Modules maintained by <a href="https://github.com/thetalecrafter">thetalecrafter</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
-      </footer>
-    </div>
-
-    
-
   </body>
 </html>
