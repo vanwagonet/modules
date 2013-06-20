@@ -210,13 +210,13 @@ browser.
 	* `translate` Defaults to `{}`. Translate specific files into CommonJS
 		modules. Object keys may be filenames, module ids, or file extensions.
 		The functions are passed a module object, with `id`, `filename`, and
-		`content` properties. Example:
+		`buffer` properties. Example:
 
 			translate: {
 				html: function(module, options, next) {
 					var id = module.id, // String
 						filename = module.filename, // String
-						content = module.content, // Buffer
+						content = module.buffer, // Buffer
 						_ = require('underscore');
 					content = content.toString('utf8');
 					next(null, 'exports.template = ' + _.template(content).source);
@@ -289,7 +289,7 @@ Basically, bugs reported in any common browser will get fixed.
 
 ### Caveats
 
-IE before 8 requires you give the client script tag an id of "modules-define".
+IE before 8 requires you give the client script tag an id of `"modules-define"`.
 All newer browsers will look for `script[data-main]` to find the
 `data-main`, `data-path`, and `data-uris` attribute settings.
 
