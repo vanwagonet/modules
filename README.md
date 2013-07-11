@@ -198,8 +198,9 @@ browser.
 				}
 			}
 
-	* `maxAge` -- Defaults to `0`. Seconds the browser should cache the module code.
-		If set, will be put in a `Cache-Control: public, max-age=` HTTP header.
+	* `maxAge` -- Defaults to `undefined`. Seconds the browser should cache the
+		module code. If set, will be put in a `Cache-Control: public, max-age=`
+		HTTP header.
 	* `nowrap` Defaults to `[ 'uris.json', /\.amd\.js$/i ]`. If a module id
 		matches an entry in this list, it is not wrapped with a `define()`
 		call. Entries can be a string module id (`entry === id`), a regular
