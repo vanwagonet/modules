@@ -259,7 +259,7 @@ module.exports = {
 
 	middleware: {
 		testMiddleware: function(test) {
-			test.expect(6);
+			test.expect(7);
 
 			var	options = {
 					root: path.resolve(__dirname, 'modules'),
@@ -323,6 +323,41 @@ module.exports = {
 					}, function(err) {
 						test.ok(!err, 'Pass through 404 requests with no error.');
 						next();
+					});
+				},
+				function(next) {
+					modules.middleware({
+						root: path.resolve(__dirname, 'modules'),
+						path: '/script/',
+						maxAge: 0
+					})({ // mock request
+						path:'/script/a.js'
+					}, { // mock response
+						set: function(header, value) {
+							if ('Cache-Control' === header) {
+								test.strictEqual(value, 'public, max-age=0', 'Send proper Cache header.');
+							}
+						},
+						send: function(content) { next(); }
+					}, function(err) {
+						test.fail('Dont call next on handled requests.');
+					});
+				},
+				function(next) {
+					modules.middleware({
+						root: path.resolve(__dirname, 'modules'),
+						path: '/script/'
+					})({ // mock request
+						path:'/script/a.js'
+					}, { // mock response
+						set: function(header, value) {
+							if ('Cache-Control' === header) {
+								test.fail('Don\'t send Cache-Control header.');
+							}
+						},
+						send: function(content) { next(); }
+					}, function(err) {
+						test.fail('Dont call next on handled requests.');
 					});
 				}
 			], test.done);
