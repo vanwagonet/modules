@@ -28,13 +28,14 @@ Add the client script to your html
 You can create bundles (files containing multiple modules), and/or map modules to
 urls outside of the conventional location.
 
-Client-side, this mapping is handled with the `data-uris` attribute on the script
-tag, or with a call to `define.uri()`. `define.uri()` takes a map object as its only
-parameter, and the `data-uris` attribute expects a JSON array of map objects.
+Client-side, this mapping is handled with the `data-urls` attribute on the script
+tag, or with a call to `define.url()`. `define.url(url, ids)` maps a single url
+to all the modules at that url, and the `data-urls` attribute expects a JSON
+object with urls as keys, and arrays of module ids as the values.
 
-Map objects are of the form:
+	define.url("url/of/bundle.js", [ "moduleid" ])
 
-	{ "uri":"url/of/bundle.js", "ids":[ "module1", "my/module/2" ] }
+	<script ... data-urls='{"bundle.js":["moduleid"]}'></script>
 
 
 Server-side and at build time you can generate bundles with the following snippets:
@@ -82,8 +83,6 @@ including define:
 	will be used instead.
 	See the [AMD wiki](https://github.com/amdjs/amdjs-api/wiki/AMD) for details.
 * `define.amd` -- Object denoting AMD compatibility.
-* `define.uri(uriMap)` -- Tell define what file to load for specific modules.
-	`uriMap` objects look like `{ "uri":"url/of/bundle.js", "ids":[ "moduleid" ] }`.
 
 
 #### define.shim.js
@@ -136,6 +135,9 @@ the [AMD spec](https://github.com/amdjs/amdjs-api/wiki/AMD), and
 * `require.resolve(id)` -- Resolves a relative module id against this module's
 	id, and returns the `uri` for that module.
 * `require.toUrl(id)` -- Similar to `require.resolve()`. See the AMD spec.
+* `require.map(url, ids)` -- Tell require where to load specific modules.
+	`url` is the url to request, and `ids` is an array of module ids that are
+	defined by the file at the url.
 
 
 

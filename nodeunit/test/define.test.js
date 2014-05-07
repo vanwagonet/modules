@@ -92,17 +92,17 @@ module.exports = {
 
 		test.strictEqual(typeof define, 'function', '`define` should be a global function.');
 		test.strictEqual(typeof define.amd, 'object', '`define.amd` should be an object.');
-		test.strictEqual(typeof define.uri, 'function', '`define.uri` should be a function.');
-		test.deepEqual(objectKeys(define).sort(), [ 'amd', 'uri' ].sort(),
-			'`define` should have properties [ "amd", "uri" ].');
+		test.deepEqual(objectKeys(define).sort(), [ 'amd' ].sort(),
+			'`define` should have properties [ "amd" ].');
 
 		test.strictEqual(typeof req, 'function', '`require` should be a global function.');
 		test.strictEqual(typeof req.resolve, 'function', '`require.resolve` should be a function.');
 		test.strictEqual(typeof req.toUrl, 'function', '`require.toUrl` should be a function.');
 		test.strictEqual(typeof req.cache, 'object', '`require.cache` should be an object.');
 		test.strictEqual(typeof req.main, 'undefined', '`require.main` should be undefined, if @data-main was empty.');
-		test.deepEqual(objectKeys(req).sort(), [ 'cache', 'main', 'resolve', 'toUrl' ].sort(),
-			'`require` should have properties [ "cache", "main", "resolve", "toUrl" ].');
+		test.strictEqual(typeof req.map, 'function', '`require.map` should be a function.');
+		test.deepEqual(objectKeys(req).sort(), [ 'cache', 'main', 'resolve', 'toUrl', 'map' ].sort(),
+			'`require` should have properties [ "cache", "main", "resolve", "toUrl", "map" ].');
 
 		test.done();
 	},
@@ -155,15 +155,12 @@ module.exports = {
 				window.define('test', test);
 				var attributes = {
 					'data-main': 'test/bundles/client',
-					'data-uris': '[' +
-						'{' +
-							'"uri":"test/bundles/absolute.bundle.js",' +
-							'"ids":["test/commonjs/absolute/a","test/commonjs/absolute/b"]' +
-						'},{' +
-							'"uri":"test/bundles/cyclic.bundle.js",' +
-							'"ids":["test/commonjs/cyclic/a","test/commonjs/cyclic/b"]' +
-						'}' +
-					']'
+					'data-urls': '{' +
+						'"test/bundles/absolute.bundle.js":' +
+							'["test/commonjs/absolute/a","test/commonjs/absolute/b"],' +
+						'"test/bundles/cyclic.bundle.js":' +
+							'["test/commonjs/cyclic/a","test/commonjs/cyclic/b"]' +
+					'}'
 				};
 				defineJs(env.window = window, attributes, function(err) {
 					if (err) { test.done(err); }
