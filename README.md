@@ -71,9 +71,10 @@ Server-side and at build time you can generate bundles with the following snippe
 These scripts create the `define` function used to create a module environment
 in the browser. You can reference the file how ever you'd like; they are in the
 `lib` folder in the source code. However, the preferred way is to include a
-script tag pointing to the path the middleware is listening to:
+script tag pointing to the path the middleware is listening to, or to a bundle
+including define:
 
-	<script src="/path/to/middleware/define.min.js"></script>
+	<script src="/path/to/define.min.js"></script>
 
 * `define(id, dependencies?, factory)` -- Define module `id`. `id` is required
 	in this implementation. If the `dependencies` parameter is omitted, the factory
@@ -283,18 +284,13 @@ Provides functions for bundling modules with their deep dependencies.
 
 ## Browser Support
 
-* IE 6+, Chrome, Firefox, Safari, Opera
+* IE 8+, Chrome, Firefox, Safari, Opera
 * IE Mobile, Chrome Mobile, Firefox Mobile, Safari Mobile, Opera Mobile
 
 Basically, bugs reported in any common browser will get fixed.
+If you need to support IE6 or IE7, please use the last version to support them:
+[v0.3.3](https://github.com/thetalecrafter/modules/tree/v0.3.3).
 
-### Caveats
-
-IE before 8 requires you give the client script tag an id of `"modules-define"`.
-All newer browsers will look for `script[data-main]` to find the
-`data-main`, `data-path`, and `data-uris` attribute settings.
-
-`data-uris` requires `JSON.parse`, which can be polyfilled in older browsers.
 
 
 
