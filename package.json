@@ -21,13 +21,12 @@
 	"scripts": { "test" : "grunt test" },
 	"engines": { "node": "*" },
 	"dependencies": {
-		"async": "~0.2"
+		"async": "^0.8"
 	},
 	"devDependencies": {
-		"jsdom": "~0.6",
-		"express": "~3.0",
-		"grunt": "~0.4",
-		"grunt-cli": "~0.1",
+		"jsdom": "^0.10",
+		"grunt": "^0.4",
+		"grunt-cli": "^0.1",
 		"grunt-contrib-jshint": "*",
 		"grunt-contrib-uglify": "*",
 		"grunt-contrib-nodeunit": "*"
