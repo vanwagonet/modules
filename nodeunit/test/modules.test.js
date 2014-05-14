@@ -259,11 +259,10 @@ module.exports = {
 
 	middleware: {
 		testMiddleware: function(test) {
-			test.expect(7);
+			test.expect(6);
 
 			var	options = {
 					root: path.resolve(__dirname, 'modules'),
-					path: '/script/',
 					maxAge: 1234
 				},
 				middleware = modules.middleware(options);
@@ -271,24 +270,7 @@ module.exports = {
 				function(next) {
 					middleware({
 						// mock request
-						path:'/'
-					}, {
-						// mock response
-						set: function(header, value) {
-							test.fail('Should not set a header.');
-						},
-						send: function(content) {
-							test.fail('Should not send content.');
-						}
-					}, function(err) {
-						test.ok(!err, 'Pass through non-matching requests with no error.');
-						next();
-					});
-				},
-				function(next) {
-					middleware({
-						// mock request
-						path:'/script/a.js'
+						path:'/a.js'
 					}, {
 						// mock response
 						set: function(header, value) {
@@ -306,12 +288,13 @@ module.exports = {
 						}
 					}, function(err) {
 						test.fail('Dont call next on handled requests.');
+						next();
 					});
 				},
 				function(next) {
 					middleware({
 						// mock request
-						path:'/script/bogus.js'
+						path:'/bogus.js'
 					}, {
 						// mock response
 						set: function(header, value) {
@@ -319,6 +302,7 @@ module.exports = {
 						},
 						send: function(content) {
 							test.fail('Should not send content.');
+							next();
 						}
 					}, function(err) {
 						test.ok(!err, 'Pass through 404 requests with no error.');
@@ -328,10 +312,9 @@ module.exports = {
 				function(next) {
 					modules.middleware({
 						root: path.resolve(__dirname, 'modules'),
-						path: '/script/',
 						maxAge: 0
 					})({ // mock request
-						path:'/script/a.js'
+						path:'/a.js'
 					}, { // mock response
 						set: function(header, value) {
 							if ('Cache-Control' === header) {
@@ -341,14 +324,14 @@ module.exports = {
 						send: function(content) { next(); }
 					}, function(err) {
 						test.fail('Dont call next on handled requests.');
+						next();
 					});
 				},
 				function(next) {
 					modules.middleware({
 						root: path.resolve(__dirname, 'modules'),
-						path: '/script/'
 					})({ // mock request
-						path:'/script/a.js'
+						path:'/a.js'
 					}, { // mock response
 						set: function(header, value) {
 							if ('Cache-Control' === header) {
@@ -358,6 +341,7 @@ module.exports = {
 						send: function(content) { next(); }
 					}, function(err) {
 						test.fail('Dont call next on handled requests.');
+						next();
 					});
 				}
 			], test.done);

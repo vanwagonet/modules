@@ -1,7 +1,7 @@
 {
 	"name": "modules",
 	"description": "CommonJS modules for the browser",
-	"version": "0.3.3",
+	"version": "0.4.0",
 	"repository": {
 		"type": "git",
 		"url": "git://github.com/thetalecrafter/modules"
@@ -17,13 +17,12 @@
 		"amd",
 		"dependency"
 	],
-	"main": "index",
 	"scripts": { "test" : "grunt test" },
 	"engines": { "node": "*" },
 	"dependencies": {
-		"async": "^0.8"
 	},
 	"devDependencies": {
+		"async": "^0.8",
 		"jsdom": "^0.10",
 		"grunt": "^0.4",
 		"grunt-cli": "^0.1",
