@@ -10,9 +10,8 @@ Install via npm
 
 Add the middleware to your express or connect app
 
-	app.get('/module/*', require('modules').middleware({
+	app.get('/module', require('modules').middleware({
 		root: './component', // where modules live in the filesystem
-		path: '/module/' // the base path for modules in the browser
 		// ... other options
 	});
 
@@ -209,7 +208,6 @@ browser.
 		call. Entries can be a string module id (`entry === id`), a regular
 		expression (`exp.test(id)`) or any object with a `test` function
 		property (`obj.test(id)`).
-	* `path` -- Defaults to `'/module/'`. Base url path for modules in the browser.
 	* `root` -- Defaults to `process.cwd()`. Base path for modules in the filesystem.
 	* `translate` Defaults to `{}`. Translate specific files into CommonJS
 		modules. Object keys may be filenames, module ids, or file extensions.
