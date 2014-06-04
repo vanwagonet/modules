@@ -8,16 +8,16 @@ module.exports = function(grunt) {
 	// Project configuration.
 	grunt.initConfig({
 		jshint: {
+			options: {
+				jshintrc: '.jshintrc'
+			},
 			all: [
 				'Gruntfile.js',
 				'nodeunit/**/*.test.js',
 				'lib/*.js',
 				'!lib/*.shim.js',
 				'!lib/*.min.js'
-			],
-			options: {
-				jshintrc: '.jshintrc'
-			}
+			]
 		},
 
 		// Minify client scripts

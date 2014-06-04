@@ -10,20 +10,49 @@ Install via npm
 
 Add the middleware to your express or connect app
 
-	app.get('/module/*', require('modules').middleware({
-		root: './component', // where modules live in the filesystem
-		path: '/module/' // the base path for modules in the browser
-		// ... other options
-	});
+	var app = express(),
+		env = process.env.NODE_ENV || 'development';
+
+	// the middleware is for development, prod should use bundles
+	if ('development' === env) {
+
+		// middleware to convert files before static
+		app.use('/module', require('modules').middleware({
+			// where modules live in the filesystem
+			src: __dirname + '/component',
+
+			// where to output the wrapped files
+			//  if not specified the output file will be served
+			//  and not saved back to the filesystem
+			dest: __dirname + '/public/module',
+
+			// should this middleware send the file directly?
+			//  defaults to false if dest is specified
+			//  defaults to true if dest is not specified
+			serve: false,
+
+			// always re-wrap files, even if not changed since last time
+			//  defaults to false
+			force: false
+
+			// ... other options passed to modules.module()
+		});
+
+	}
+
+	// let static serve the wrapped files
+	app.use('/public', express.static(__dirname + '/public'));
 
 Add the client script to your html
 
-
-	<script src="/module/define.min.js" data-main="my-main-module"></script>
+	<script src="/module/define.min.js" data-main="application"></script>
 
 
 
 ### Mapping and Bundling
+
+It is recommended to create bundles for production, and use the middleware for
+development and debugging only.
 
 You can create bundles (files containing multiple modules), and/or map modules to
 urls outside of the conventional location.
@@ -35,15 +64,96 @@ object with urls as keys, and arrays of module ids as the values.
 
 	define.url("url/of/bundle.js", [ "moduleid" ])
 
+	...or...
+
 	<script ... data-urls='{"bundle.js":["moduleid"]}'></script>
 
+Generate bundles using the grunt task:
 
-Server-side and at build time you can generate bundles with the following snippets:
+	grunt.initConfig({
+		modules: {
+			options: {
+				// where modules live in the filesystem
+				src: __dirname + '/component',
+
+				// where to put output files
+				dest: __dirname + '/public/module',
+
+				// generate a script that maps the generated bundles
+				urls: __dirname + '/public/module/urls.js'
+
+				// ... other options passed to modules.module()
+			},
+
+			application: {
+				// output bundle, relative to options.dest
+				//  if a target has no dest or no url, the modules are output
+				//  to options.dest, but no bundle file is generated
+				dest: 'application.bundle.js',
+
+				// url the browser requests for this bundle
+				url: '/module/application.bundle.js',
+
+				// modules to include the bundle,
+				//  along with their deep dependencies
+				include: [
+
+					// include define, this will be the base script
+					'define',
+
+					// include the urls map so other bundles will load when
+					//  their modules are required async
+					'<%= modules.options.urls %>',
+
+					// your main mondule
+					'application'
+				],
+
+				// modules to assume are loaded already,
+				//  with their deep dependencies,
+				//  and not to include
+				//  (usually in a bundle loaded before this one)
+				exclude: []
+			},
+
+			settings: {
+				dest: 'settings.bundle.js',
+				url: '/module/settings.bundle.js',
+				include: [ 'settings' ],
+				exclude: [ 'application' ]
+			}
+		}
+	});
+
+	grunt.loadNpmTasks('modules');
+
+You can also generate bundles on the cli:
+
+	modules \
+		--src "component" \
+		--dest "public/module" \
+		--urls "public/module/urls.js" \
+		-- \
+			--dest "application.bundle.js" \
+			--url "/module/application.bundle.js" \
+			--include "define" "public/module/urls.js" "application" \
+		-- \
+			--dest "settings.bundle.js" \
+			--url "/module/settings.bundle.js" \
+			--include "settings" \
+			--exclude "application"
+
+Not using grunt or cli? You can generate bundles with the following snippets:
 
 	// Generate a bundle with a specific set of modules included
 	require('modules').modules(
+		// list of modules to include concatenated
 		[ 'module1', 'module2' ],
-		{ /* options */ }, // specify optional compression, etc.
+
+		// options passed to modules.module()
+		{},
+
+		//
 		function(err, js, modified) {
 			// js is a string containing the AMD-wrapped javascript for the modules
 			// modified is the most recent modified date among the included modules
@@ -52,7 +162,7 @@ Server-side and at build time you can generate bundles with the following snippe
 
 	// Generate a bundle with all of the deep dependencies of the modules, excluding
 	//  the deep dependencies of another list of modules
-	require('modules/lib/bundles').bundle(
+	require('modules').bundle(
 		[ 'module1', 'module2' ], // include these and their deep dependencies
 		[ 'module3', 'module4' ], // except any of these or their deep dependencies
 		{ /* options */ },
@@ -240,26 +350,18 @@ browser.
 	`ids` is an array of module id strings, all of which are included in the
 	resulting `result.code`. The `result.modified` is the most recent modified
 	time among all of the source files loaded.
-
-
-#### bundles
-
-	bundles = require('modules/lib/bundles')
-
-Provides functions for bundling modules with their deep dependencies.
-
-* `bundles.bundle(ids, exclude, options?, next)` -- Generate a bundle including
+* `modules.bundle(ids, exclude, options?, next)` -- Generate a bundle including
 	the browser code for all of the modules in the `ids` array and their deep
 	dependencies, except `exclude` and all of their deep dependencies.
 	`ids` and `exclude` are arrays of module id strings. `options` are the
 	same as `modules.middleware()`. `next` is called when complete, with the
 	same arguments as `next` in `modules.module()`.
-* `bundles.dependencies(ids, options?, next)` -- Gets a list of `ids` and all
+* `modules.deepDependencies(ids, options?, next)` -- Gets a list of `ids` and all
 	of their deep dependencies. Modules need to be loaded in order to determine
 	their dependencies, so `modules.module()` is called inside this method,
 	with the `options` passed in. `next(err, ids)` is called when complete,
 	with `ids` as an array of absolute module id strings.
-* `bundles.expand(ids, exclude, options?, next)` -- Gets a list just like
+* `modules.expand(ids, exclude, options?, next)` -- Gets a list just like
 	`bundles.dependencies()`, only the ids in `exclude` and their deep
 	dependencies are omitted from the list.
 
@@ -277,7 +379,7 @@ Provides functions for bundling modules with their deep dependencies.
 
 ## Server-Side Features
 
- * Middleware for express / connect
+ * Middleware for development in express / connect
  * Create bundles of all the deep dependencies of a list of modules
  * Configure minification using your favorite compressor
 
