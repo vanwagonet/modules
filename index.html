@@ -49,9 +49,8 @@
 
 <p>Add the middleware to your express or connect app</p>
 
-<pre><code>app.get('/module/*', require('modules').middleware({
+<pre><code>app.get('/module', require('modules').middleware({
     root: './component', // where modules live in the filesystem
-    path: '/module/' // the base path for modules in the browser
     // ... other options
 });
 </code></pre>
@@ -67,13 +66,14 @@
 <p>You can create bundles (files containing multiple modules), and/or map modules to
 urls outside of the conventional location.</p>
 
-<p>Client-side, this mapping is handled with the <code>data-uris</code> attribute on the script
-tag, or with a call to <code>define.uri()</code>. <code>define.uri()</code> takes a map object as its only
-parameter, and the <code>data-uris</code> attribute expects a JSON array of map objects.</p>
+<p>Client-side, this mapping is handled with the <code>data-urls</code> attribute on the script
+tag, or with a call to <code>require.map()</code>. <code>require.map(url, ids)</code> maps a single url
+to all the modules at that url, and the <code>data-urls</code> attribute expects a JSON
+object with urls as keys, and arrays of module ids as the values.</p>
 
-<p>Map objects are of the form:</p>
+<pre><code>require.map("url/of/bundle.js", [ "moduleid" ])
 
-<pre><code>{ "uri":"url/of/bundle.js", "ids":[ "module1", "my/module/2" ] }
+&lt;script ... data-urls='{"bundle.js":["moduleid"]}'&gt;&lt;/script&gt;
 </code></pre>
 
 <p>Server-side and at build time you can generate bundles with the following snippets:</p>
@@ -111,9 +111,10 @@ require('modules/lib/bundles').bundle(
 <p>These scripts create the <code>define</code> function used to create a module environment
 in the browser. You can reference the file how ever you'd like; they are in the
 <code>lib</code> folder in the source code. However, the preferred way is to include a
-script tag pointing to the path the middleware is listening to:</p>
+script tag pointing to the path the middleware is listening to, or to a bundle
+including define:</p>
 
-<pre><code>&lt;script src="/path/to/middleware/define.min.js"&gt;&lt;/script&gt;
+<pre><code>&lt;script src="/path/to/define.min.js"&gt;&lt;/script&gt;
 </code></pre>
 
 <ul>
@@ -125,9 +126,6 @@ will be used instead.
 See the <a href="https://github.com/amdjs/amdjs-api/wiki/AMD">AMD wiki</a> for details.</li>
 <li>
 <code>define.amd</code> -- Object denoting AMD compatibility.</li>
-<li>
-<code>define.uri(uriMap)</code> -- Tell define what file to load for specific modules.
-<code>uriMap</code> objects look like <code>{ "uri":"url/of/bundle.js", "ids":[ "moduleid" ] }</code>.</li>
 </ul><h4>
 <a name="defineshimjs" class="anchor" href="#defineshimjs"><span class="octicon octicon-link"></span></a>define.shim.js</h4>
 
@@ -198,6 +196,10 @@ attribute of the define script.</li>
 id, and returns the <code>uri</code> for that module.</li>
 <li>
 <code>require.toUrl(id)</code> -- Similar to <code>require.resolve()</code>. See the AMD spec.</li>
+<li>
+<code>require.map(url, ids)</code> -- Tell require where to load specific modules.
+<code>url</code> is the url to request, and <code>ids</code> is an array of module ids that are
+defined by the file at the url.</li>
 </ul><h3>
 <a name="in-nodejs" class="anchor" href="#in-nodejs"><span class="octicon octicon-link"></span></a>In Node.js</h3>
 
@@ -272,15 +274,17 @@ are resolved against <code>root</code>. Values can also be functions Example:</p
 }
 </code></pre>
 </li>
-<li><p><code>maxAge</code> -- Defaults to <code>0</code>. Seconds the browser should cache the module code.
-If set, will be put in a <code>Cache-Control: public, max-age=</code> HTTP header.</p></li>
-<li><p><code>nowrap</code> Defaults to <code>[ 'uris.json', /\.amd\.js$/i ]</code>. If a module id
+<li><p><code>maxAge</code> -- Defaults to <code>undefined</code>. Seconds the browser should cache the
+module code. If set, will be put in a <code>Cache-Control: public, max-age=</code>
+HTTP header.</p></li>
+<li>
+<code>nowrap</code> Defaults to <code>[ 'uris.json', /\.amd\.js$/i ]</code>. If a module id
 matches an entry in this list, it is not wrapped with a <code>define()</code>
 call. Entries can be a string module id (<code>entry === id</code>), a regular
 expression (<code>exp.test(id)</code>) or any object with a <code>test</code> function
-property (<code>obj.test(id)</code>).</p></li>
-<li><p><code>path</code> -- Defaults to <code>'/module/'</code>. Base url path for modules in the browser.</p></li>
-<li><p><code>root</code> -- Defaults to <code>process.cwd()</code>. Base path for modules in the filesystem.</p></li>
+property (<code>obj.test(id)</code>).</li>
+<li>
+<code>root</code> -- Defaults to <code>process.cwd()</code>. Base path for modules in the filesystem.</li>
 <li>
 <p><code>translate</code> Defaults to <code>{}</code>. Translate specific files into CommonJS
 modules. Object keys may be filenames, module ids, or file extensions.
@@ -304,17 +308,19 @@ The functions are passed a module object, with <code>id</code>, <code>filename</
 </li>
 </ul>
 </li>
-<li><p><code>modules.module(id, options?, next)</code> -- Generate the client-side code for
+<li>
+<code>modules.module(id, options?, next)</code> -- Generate the client-side code for
 the module. <code>id</code> is a module id string. <code>options</code> are the same as for
 <code>modules.middleware()</code>. <code>next(err, result)</code> will be called when
 done. <code>err</code> is any error that may have occured, or <code>null</code> otherwise.
 <code>result</code> is an object with properties <code>code</code>, which is the browser javascript
 as a string, and <code>modified</code>, which is a <code>Date</code> of the last modified time on
-the source file.</p></li>
-<li><p><code>modules.modules(ids, options?, next)</code> -- Exactly like <code>modules.module</code> only
+the source file.</li>
+<li>
+<code>modules.modules(ids, options?, next)</code> -- Exactly like <code>modules.module</code> only
 <code>ids</code> is an array of module id strings, all of which are included in the
 resulting <code>result.code</code>. The <code>result.modified</code> is the most recent modified
-time among all of the source files loaded.</p></li>
+time among all of the source files loaded.</li>
 </ul><h4>
 <a name="bundles" class="anchor" href="#bundles"><span class="octicon octicon-link"></span></a>bundles</h4>
 
@@ -362,18 +368,11 @@ dependencies are omitted from the list.</li>
 <a name="browser-support" class="anchor" href="#browser-support"><span class="octicon octicon-link"></span></a>Browser Support</h2>
 
 <ul>
-<li>IE 6+, Chrome, Firefox, Safari, Opera</li>
+<li>IE 8+, Chrome, Firefox, Safari, Opera</li>
 <li>IE Mobile, Chrome Mobile, Firefox Mobile, Safari Mobile, Opera Mobile</li>
-</ul><p>Basically, bugs reported in any common browser will get fixed.</p>
-
-<h3>
-<a name="caveats" class="anchor" href="#caveats"><span class="octicon octicon-link"></span></a>Caveats</h3>
-
-<p>IE before 8 requires you give the client script tag an id of <code>"modules-define"</code>.
-All newer browsers will look for <code>script[data-main]</code> to find the
-<code>data-main</code>, <code>data-path</code>, and <code>data-uris</code> attribute settings.</p>
-
-<p><code>data-uris</code> requires <code>JSON.parse</code>, which can be polyfilled in older browsers.</p>
+</ul><p>Basically, bugs reported in any common browser will get fixed.
+If you need to support IE6 or IE7, please use the last version to support them:
+<a href="https://github.com/thetalecrafter/modules/tree/v0.3.3">v0.3.3</a>.</p>
 
 <h2>
 <a name="who-and-why" class="anchor" href="#who-and-why"><span class="octicon octicon-link"></span></a>Who and Why</h2>
