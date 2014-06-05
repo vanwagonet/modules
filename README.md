@@ -28,11 +28,11 @@ You can create bundles (files containing multiple modules), and/or map modules t
 urls outside of the conventional location.
 
 Client-side, this mapping is handled with the `data-urls` attribute on the script
-tag, or with a call to `define.url()`. `define.url(url, ids)` maps a single url
+tag, or with a call to `require.map()`. `require.map(url, ids)` maps a single url
 to all the modules at that url, and the `data-urls` attribute expects a JSON
 object with urls as keys, and arrays of module ids as the values.
 
-	define.url("url/of/bundle.js", [ "moduleid" ])
+	require.map("url/of/bundle.js", [ "moduleid" ])
 
 	<script ... data-urls='{"bundle.js":["moduleid"]}'></script>
 
