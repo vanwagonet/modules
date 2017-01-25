@@ -22,10 +22,10 @@
 	"dependencies": {
 	},
 	"devDependencies": {
-		"async": "^0.8",
-		"jsdom": "^0.10",
-		"grunt": "^0.4",
-		"grunt-cli": "^0.1",
+		"async": "^2.1.4",
+		"jsdom": "^9.9.1",
+		"grunt": "^1.0.1",
+		"grunt-cli": "^1.2.0",
 		"grunt-contrib-jshint": "*",
 		"grunt-contrib-uglify": "*",
 		"grunt-contrib-nodeunit": "*"
