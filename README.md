@@ -1,5 +1,7 @@
 # modules [![Build Status](https://secure.travis-ci.org/thetalecrafter/modules.png?branch=master)](http://travis-ci.org/thetalecrafter/modules)
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/thetalecrafter/modules.svg)](https://greenkeeper.io/)
+
 > Use CommonJS modules client-side in web applications
 
 ## Getting started
